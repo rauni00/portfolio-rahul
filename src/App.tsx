@@ -978,33 +978,60 @@ export default function App() {
         </motion.div>
       </section>
 
-      {/* ═══════════ FOOTER (Premium) ═══════════ */}
-      <footer className="footer-glow relative z-10 py-10">
-        <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-4 px-5 sm:flex-row sm:px-8">
-          <div className="flex items-center gap-3">
-            <span
-              className="grid h-8 w-8 place-items-center rounded-lg text-[10px] font-bold text-white"
-              style={{
-                background: "linear-gradient(135deg, #4f46e5, #7c3aed)",
-              }}
-            >
-              {profile.avatarInitials}
-            </span>
-            <div>
-              <p className="text-sm font-semibold text-slate-900">{profile.name}</p>
-              <p className="text-[11px] text-slate-500">Full Stack Developer • AI Specialist</p>
+      {/* ═══════════ FOOTER ═══════════ */}
+      <footer className="footer-glow relative z-10 pb-10 pt-12">
+        <div className="mx-auto max-w-6xl px-5 sm:px-8">
+          <div className="flex flex-col items-center justify-between gap-6 sm:flex-row">
+            <div className="flex items-center gap-3">
+              <span
+                className="grid h-10 w-10 place-items-center rounded-xl text-xs font-bold text-white"
+                style={{
+                  background: "linear-gradient(135deg, #4f46e5, #7c3aed)",
+                  boxShadow: "0 0 16px rgba(79, 70, 229, 0.35)",
+                }}
+              >
+                {profile.avatarInitials}
+              </span>
+              <div>
+                <p className="font-display text-sm font-bold text-slate-900">{profile.name}</p>
+                <p className="text-[11px] text-slate-500">Full Stack Developer • AI Specialist</p>
+              </div>
+            </div>
+            <nav className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2">
+              {navLinks.map((l) => (
+                <a
+                  key={l.href}
+                  href={l.href}
+                  className="text-xs font-medium text-slate-500 transition hover:text-indigo-600"
+                  data-cursor-hover
+                >
+                  {l.label}
+                </a>
+              ))}
+            </nav>
+            <div className="flex items-center gap-2">
+              {socials.map((s) => (
+                <a
+                  key={s.label}
+                  href={s.href}
+                  target="_blank"
+                  rel="noreferrer"
+                  aria-label={s.label}
+                  className="grid h-9 w-9 place-items-center rounded-full border border-slate-900/10 bg-white text-slate-500 shadow-sm transition hover:-translate-y-0.5 hover:border-indigo-500/40 hover:text-indigo-600 hover:shadow-md"
+                  data-cursor-hover
+                >
+                  <s.icon size={15} />
+                </a>
+              ))}
             </div>
           </div>
-          <p className="text-xs text-slate-500">
-            © {currentYear} — Built with React + Vite + GSAP + Framer Motion
-          </p>
-          <div className="flex items-center gap-3">
-            <p className="inline-flex items-center gap-1.5 text-xs text-slate-500">
-              <MapPin size={12} /> {profile.location}
+          <div className="mt-8 flex flex-col items-center justify-between gap-2 border-t border-slate-900/10 pt-6 text-xs text-slate-500 sm:flex-row">
+            <p className="inline-flex items-center gap-1.5">
+              <MapPin size={12} /> © {currentYear} {profile.name} • {profile.location}
             </p>
-            <span className="inline-flex items-center gap-1 text-xs text-slate-500">
-              Made with <Heart size={11} className="text-orange-600" fill="currentColor" />
-            </span>
+            <p className="inline-flex items-center gap-1">
+              Made with <Heart size={11} className="text-orange-600" fill="currentColor" /> in India
+            </p>
           </div>
         </div>
       </footer>
