@@ -665,73 +665,33 @@ export function ChatWidget({ open, onOpenChange }: { open: boolean; onOpenChange
       console.info("[voice] sessionStorage unwritable, memory flag only");
     }
   };
-    // Waits for TTS voices (Chrome loads them async; speaking with an
-    // empty voice list can fail silently). Never waits more than 1.5s.
-    const ensureVoices = (cb: () => void) => {
-      try {
-        const synth = window.speechSynthesis;
-        if (!synth || synth.getVoices().length > 0) {
-          cb();
-          return;
-        }
-        let fired = false;
-        const done = () => {
-          if (fired) return;
-          fired = true;
-          cb();
-        };
-        synth.addEventListener("voiceschanged", done, { once: true });
-        window.setTimeout(done, 1500);
-      } catch {
-        cb();
-      }
-    };
-    // Queues the utterance. NEVER cancel() right before speak() — Chrome's
-    // async cancel wipes the new utterance and you get silence.
-    // Calls back with true only if speech really started.
-    const dispatch = (text: string, onDone: (ok: boolean) => void) => {
+    // Dispatch synchronously so browser user-activation permissions are preserved.
+    // The key is written only from onstart, not when the browser merely queues speech.
+    const dispatch = (text: string, key: string) => {
       try {
         const synth = window.speechSynthesis;
         if (!synth) {
           console.info("[voice] no speech engine in this browser");
-          onDone(false);
           return;
         }
-        ensureVoices(() => {
-          try {
-            const s2 = window.speechSynthesis;
-            if (!s2) {
-              onDone(false);
-              return;
-            }
-            const u = new SpeechSynthesisUtterance(text);
-            u.rate = 0.92; // slow + clear delivery
-            u.pitch = 1;
-            u.volume = 1;
-            const voices = s2.getVoices();
-            const pick =
-              voices.find((v) => /^en([-_]US)?$/i.test(v.lang) && /google|natural|samantha|zira/i.test(v.name)) ||
-              voices.find((v) => /^en/i.test(v.lang));
-            if (pick) u.voice = pick;
-            // Let any stuck queue settle first, THEN speak (avoids the cancel-race).
-            if (s2.speaking || s2.pending) s2.cancel();
-            window.setTimeout(() => {
-              try {
-                if (s2.paused) s2.resume();
-                s2.speak(u);
-                const ok = s2.speaking || s2.pending;
-                console.info(`[voice] dispatch ${ok ? "started" : "blocked/failed"} (voices: ${voices.length})`);
-                onDone(ok);
-              } catch {
-                onDone(false);
-              }
-            }, 150);
-          } catch {
-            onDone(false);
-          }
-        });
+        if (synth.speaking || synth.pending) return;
+
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.rate = 0.92;
+        utterance.pitch = 1;
+        utterance.volume = 1;
+        const voices = synth.getVoices();
+        const pick =
+          voices.find((v) => /^en([-_]US)?$/i.test(v.lang) && /google|natural|samantha|zira/i.test(v.name)) ||
+          voices.find((v) => /^en/i.test(v.lang));
+        if (pick) utterance.voice = pick;
+        utterance.onstart = () => markGreeted(key);
+        utterance.onerror = (event) => {
+          console.info(`[voice] speech failed: ${event.error}`);
+        };
+        synth.speak(utterance);
       } catch {
-        onDone(false);
+        console.info("[voice] speech dispatch failed");
       }
     };
 
@@ -741,10 +701,7 @@ export function ChatWidget({ open, onOpenChange }: { open: boolean; onOpenChange
       console.info("[voice] bg already greeted, skipping");
       return;
     }
-    // Mark ONLY on real dispatch. Blocked attempts stay unmarked.
-    dispatch(BG_TEXT, (ok) => {
-      if (ok) markGreeted(BG_KEY);
-    });
+    dispatch(BG_TEXT, BG_KEY);
   };
 
   // BG greeting fires the moment the site loads (first visit only).
@@ -795,9 +752,7 @@ export function ChatWidget({ open, onOpenChange }: { open: boolean; onOpenChange
       } catch {
         /* ignore */
       }
-      dispatch(CHAT_TEXT, (ok) => {
-        if (ok) markGreeted(CHAT_KEY);
-      });
+      dispatch(CHAT_TEXT, CHAT_KEY);
     };
   });
 
