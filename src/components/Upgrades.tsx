@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   ArrowUp,
@@ -10,6 +10,7 @@ import {
   Quote,
   Send,
   Sparkles,
+  Volume2,
   X,
 } from "lucide-react";
 import { chatFaqs, profile, services, testimonials } from "../data";
@@ -623,6 +624,8 @@ export function ChatWidget({ open, onOpenChange }: { open: boolean; onOpenChange
   const idRef = useRef(1);
   const runRef = useRef(0);
   const timersRef = useRef<number[]>([]);
+  // Assigned inside the voice effect (needs its dispatch) — launcher calls it on open.
+  const speakOnOpenRef = useRef(() => {});
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -636,36 +639,167 @@ export function ChatWidget({ open, onOpenChange }: { open: boolean; onOpenChange
     };
   }, []);
 
-  // 🔊 first visit (per tab session) → the agent greets by voice.
-  // Key lives in sessionStorage: tab close = key auto-removed = next visit greets again.
-  useEffect(() => {
-    let t: ReturnType<typeof setTimeout> | undefined;
+  // 🔊 Voice keys — BG greeting and CHAT greeting tracked SEPARATELY.
+  // sessionStorage is primary; an in-memory fallback covers browsers where
+  // storage throws (blocked cookies / private mode) — otherwise the greeting
+  // would silently never play AND never store a key.
+  const BG_KEY = "rr-voice-bg";
+  const CHAT_KEY = "rr-voice-chat";
+  const voiceMem: Record<string, boolean> = useMemo(() => ({}), []);
+  const BG_TEXT = "Hi! I'm Rahul's AI agent. Ask me about his experience, projects, or hiring!";
+  const CHAT_TEXT = "Hey! I'm Rahul's AI agent. Ask me about experience, projects, or hiring!";
+
+  const alreadyGreeted = (key: string) => {
     try {
-      if (sessionStorage.getItem("rr-voice-greeted")) return;
-      t = setTimeout(() => {
-        try {
-          const synth = window.speechSynthesis;
-          if (synth) {
-            const u = new SpeechSynthesisUtterance(
-              "Hi! I'm Rahul's AI agent. Ask me about his experience, projects, or hiring!"
-            );
-            u.rate = 1.05;
-            synth.speak(u);
-          }
-        } catch {
-          /* voice not available */
-        }
-        try {
-          sessionStorage.setItem("rr-voice-greeted", "1");
-        } catch {
-          /* storage unavailable */
-        }
-      }, 2500);
+      if (sessionStorage.getItem(key)) return true;
     } catch {
-      /* storage unavailable */
+      console.info("[voice] sessionStorage unreadable, using memory flag");
     }
-    return () => clearTimeout(t);
+    return !!voiceMem[key];
+  };
+  const markGreeted = (key: string) => {
+    voiceMem[key] = true;
+    try {
+      sessionStorage.setItem(key, "1");
+    } catch {
+      console.info("[voice] sessionStorage unwritable, memory flag only");
+    }
+  };
+    // Waits for TTS voices (Chrome loads them async; speaking with an
+    // empty voice list can fail silently). Never waits more than 1.5s.
+    const ensureVoices = (cb: () => void) => {
+      try {
+        const synth = window.speechSynthesis;
+        if (!synth || synth.getVoices().length > 0) {
+          cb();
+          return;
+        }
+        let fired = false;
+        const done = () => {
+          if (fired) return;
+          fired = true;
+          cb();
+        };
+        synth.addEventListener("voiceschanged", done, { once: true });
+        window.setTimeout(done, 1500);
+      } catch {
+        cb();
+      }
+    };
+    // Queues the utterance. NEVER cancel() right before speak() — Chrome's
+    // async cancel wipes the new utterance and you get silence.
+    // Calls back with true only if speech really started.
+    const dispatch = (text: string, onDone: (ok: boolean) => void) => {
+      try {
+        const synth = window.speechSynthesis;
+        if (!synth) {
+          console.info("[voice] no speech engine in this browser");
+          onDone(false);
+          return;
+        }
+        ensureVoices(() => {
+          try {
+            const s2 = window.speechSynthesis;
+            if (!s2) {
+              onDone(false);
+              return;
+            }
+            const u = new SpeechSynthesisUtterance(text);
+            u.rate = 0.92; // slow + clear delivery
+            u.pitch = 1;
+            u.volume = 1;
+            const voices = s2.getVoices();
+            const pick =
+              voices.find((v) => /^en([-_]US)?$/i.test(v.lang) && /google|natural|samantha|zira/i.test(v.name)) ||
+              voices.find((v) => /^en/i.test(v.lang));
+            if (pick) u.voice = pick;
+            // Let any stuck queue settle first, THEN speak (avoids the cancel-race).
+            if (s2.speaking || s2.pending) s2.cancel();
+            window.setTimeout(() => {
+              try {
+                if (s2.paused) s2.resume();
+                s2.speak(u);
+                const ok = s2.speaking || s2.pending;
+                console.info(`[voice] dispatch ${ok ? "started" : "blocked/failed"} (voices: ${voices.length})`);
+                onDone(ok);
+              } catch {
+                onDone(false);
+              }
+            }, 150);
+          } catch {
+            onDone(false);
+          }
+        });
+      } catch {
+        onDone(false);
+      }
+    };
+
+  // Background greeting: first visit → speaks IMMEDIATELY on site load.
+  const speakBg = () => {
+    if (alreadyGreeted(BG_KEY)) {
+      console.info("[voice] bg already greeted, skipping");
+      return;
+    }
+    // Mark ONLY on real dispatch. Blocked attempts stay unmarked.
+    dispatch(BG_TEXT, (ok) => {
+      if (ok) markGreeted(BG_KEY);
+    });
+  };
+
+  // BG greeting fires the moment the site loads (first visit only).
+  useEffect(() => {
+    try {
+      window.speechSynthesis?.getVoices(); // warm up async voice list
+    } catch {
+      /* ignore */
+    }
+    speakBg();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // First click/keypress anywhere = guaranteed audible moment for the BG
+  // greeting — EXCEPT on the chat launcher (its own greeting speaks there,
+  // otherwise you'd hear it TWICE). Skipped while chat is open.
+  useEffect(() => {
+    const onFirstGesture = (e: Event) => {
+      const t = e.target as HTMLElement | null;
+      if (t && typeof t.closest === "function" && t.closest("[data-chat-launcher]")) return;
+      if (open) return;
+      if (alreadyGreeted(BG_KEY)) {
+        window.removeEventListener("pointerdown", onFirstGesture);
+        window.removeEventListener("keydown", onFirstGesture);
+        return;
+      }
+      speakBg();
+    };
+    window.addEventListener("pointerdown", onFirstGesture);
+    window.addEventListener("keydown", onFirstGesture);
+    return () => {
+      window.removeEventListener("pointerdown", onFirstGesture);
+      window.removeEventListener("keydown", onFirstGesture);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
+
+  // Chat-open greeting: separate key, plays once per tab. Never overlaps
+  // an in-progress utterance (that's what caused the double-voice).
+  useEffect(() => {
+    speakOnOpenRef.current = () => {
+      if (alreadyGreeted(CHAT_KEY)) {
+        console.info("[voice] chat already greeted, skipping");
+        return;
+      }
+      try {
+        if (window.speechSynthesis?.speaking) return;
+      } catch {
+        /* ignore */
+      }
+      dispatch(CHAT_TEXT, (ok) => {
+        if (ok) markGreeted(CHAT_KEY);
+      });
+    };
+  });
 
   const later = (fn: () => void, ms: number) => {
     const t = window.setTimeout(fn, ms);
@@ -747,11 +881,45 @@ export function ChatWidget({ open, onOpenChange }: { open: boolean; onOpenChange
     }, 2200);
   };
 
+  /* Speak any bot answer on demand — a click is a user gesture, so it always plays. */
+  const speakMessage = (text: string) => {
+    try {
+      const synth = window.speechSynthesis;
+      if (!synth) return;
+      if (synth.speaking || synth.pending) {
+        synth.cancel(); // toggle: tap while talking stops it
+        return;
+      }
+      const u = new SpeechSynthesisUtterance(text);
+      u.rate = 0.92;
+      u.pitch = 1;
+      u.volume = 1;
+      const voices = synth.getVoices();
+      const pick =
+        voices.find((v) => /^en([-_]US)?$/i.test(v.lang) && /google|natural|samantha|zira/i.test(v.name)) ||
+        voices.find((v) => /^en/i.test(v.lang));
+      if (pick) u.voice = pick;
+      window.setTimeout(() => {
+        try {
+          synth.speak(u);
+        } catch {
+          /* ignore */
+        }
+      }, 120);
+    } catch {
+      /* voice not available */
+    }
+  };
+
   return (
     <>
       {/* launcher */}
       <motion.button
-        onClick={() => onOpenChange(!open)}
+        data-chat-launcher
+        onClick={() => {
+          if (!open) speakOnOpenRef.current();
+          onOpenChange(!open);
+        }}
         whileHover={{ scale: 1.08 }}
         whileTap={{ scale: 0.94 }}
         aria-label="Open AI agent"
@@ -848,8 +1016,22 @@ export function ChatWidget({ open, onOpenChange }: { open: boolean; onOpenChange
                         ))}
                       </span>
                     )}
-                    {m.meta && (
-                      <span className="mt-1.5 block font-mono text-[10px] text-slate-400">{m.meta}</span>
+                    {(m.meta || (m.from === "bot" && m.text)) && (
+                      <span className="mt-1.5 flex items-center gap-2">
+                        {m.meta && (
+                          <span className="font-mono text-[10px] text-slate-400">{m.meta}</span>
+                        )}
+                        {m.from === "bot" && m.text && (
+                          <button
+                            onClick={() => speakMessage(m.text)}
+                            aria-label="Listen to this answer"
+                            title="Listen"
+                            className="grid h-6 w-6 place-items-center rounded-full text-indigo-500 transition hover:bg-indigo-500/10"
+                          >
+                            <Volume2 size={13} />
+                          </button>
+                        )}
+                      </span>
                     )}
                     {m.actions && m.actions.length > 0 && (
                       <span className="mt-2 flex flex-wrap gap-1.5">
