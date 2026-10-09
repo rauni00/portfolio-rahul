@@ -128,8 +128,8 @@ export default function GsapEffects() {
           start: "top center",
           end: "bottom center",
           onToggle: (self) => {
-            link.classList.toggle("!bg-white/10", self.isActive);
-            link.classList.toggle("!text-white", self.isActive);
+            link.classList.toggle("!bg-slate-900/[0.06]", self.isActive);
+            link.classList.toggle("!text-slate-900", self.isActive);
           },
         });
       });

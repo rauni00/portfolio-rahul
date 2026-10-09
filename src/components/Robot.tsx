@@ -91,14 +91,14 @@ export default function Robot() {
           key={bubble}
           initial={{ opacity: 0, y: 8, scale: 0.9 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
-          className="rounded-2xl rounded-bl-sm border border-fuchsia-400/40 bg-[#0b1020]/95 px-3.5 py-1.5 text-xs font-bold text-fuchsia-200 shadow-lg shadow-fuchsia-500/20"
+          className="rounded-2xl rounded-bl-sm border border-violet-400/40 bg-[#0c0e18]/95 px-3.5 py-1.5 text-xs font-bold text-violet-200 shadow-lg shadow-violet-500/20"
         >
           {BUBBLES[bubble]}
         </motion.div>
       </div>
 
       {/* ambient glow */}
-      <div className="absolute inset-x-6 top-14 bottom-0 rounded-full bg-gradient-to-br from-fuchsia-500/25 via-violet-500/25 to-cyan-500/25 blur-2xl" />
+      <div className="absolute inset-x-6 top-14 bottom-0 rounded-full bg-gradient-to-br from-violet-500/25 via-indigo-500/25 to-teal-500/25 blur-2xl" />
 
       <motion.div
         animate={{ y: [0, -14, 0] }}
@@ -117,13 +117,13 @@ export default function Robot() {
               <stop offset="1" stopColor="#0b1530" />
             </linearGradient>
             <linearGradient id="oPod" x1="0" y1="0" x2="1" y2="1">
-              <stop offset="0" stopColor="#22d3ee" />
-              <stop offset="1" stopColor="#e879f9" />
+              <stop offset="0" stopColor="#2dd4bf" />
+              <stop offset="1" stopColor="#a78bfa" />
             </linearGradient>
             <linearGradient id="oScan" x1="0" y1="0" x2="1" y2="0">
-              <stop offset="0" stopColor="#22d3ee" stopOpacity="0" />
-              <stop offset="0.5" stopColor="#67e8f9" />
-              <stop offset="1" stopColor="#22d3ee" stopOpacity="0" />
+              <stop offset="0" stopColor="#2dd4bf" stopOpacity="0" />
+              <stop offset="0.5" stopColor="#5eead4" />
+              <stop offset="1" stopColor="#2dd4bf" stopOpacity="0" />
             </linearGradient>
             <filter id="oGlow" x="-60%" y="-60%" width="220%" height="220%">
               <feGaussianBlur stdDeviation="3" result="b" />
@@ -140,12 +140,12 @@ export default function Robot() {
           {/* halo ring (rotating dashes) */}
           <ellipse
             cx="100" cy="26" rx="48" ry="13" fill="none"
-            stroke="#67e8f9" strokeWidth="2" strokeDasharray="7 9" opacity="0.85"
+            stroke="#5eead4" strokeWidth="2" strokeDasharray="7 9" opacity="0.85"
           >
             <animate attributeName="stroke-dashoffset" from="0" to="64" dur="5s" repeatCount="indefinite" />
           </ellipse>
           {/* satellite orbiting the halo */}
-          <circle cx="0" cy="0" r="4.5" fill="#a3e635" filter="url(#oGlow)">
+          <circle cx="0" cy="0" r="4.5" fill="#fbbf24" filter="url(#oGlow)">
             <animateMotion dur="5s" repeatCount="indefinite" path="M52,26 a48,13 0 1,1 96,0 a48,13 0 1,1 -96,0" />
           </circle>
 
@@ -169,7 +169,7 @@ export default function Robot() {
           <ellipse cx="70" cy="66" rx="6" ry="3.5" fill="#fff" opacity="0.25" transform="rotate(-25 70 66)" />
 
           {/* visor */}
-          <rect x="58" y="74" width="84" height="44" rx="22" fill="url(#oVisor)" stroke="#22d3ee" strokeOpacity="0.7" strokeWidth="1.5" />
+          <rect x="58" y="74" width="84" height="44" rx="22" fill="url(#oVisor)" stroke="#2dd4bf" strokeOpacity="0.7" strokeWidth="1.5" />
           {/* scan sweep */}
           <g clipPath="url(#oVisorClip)">
             <motion.rect
@@ -188,22 +188,22 @@ export default function Robot() {
               transition: "transform 0.13s ease",
             }}
           >
-            <circle cx={86 + pupil.x} cy={96 + pupil.y} r="9" fill="#22d3ee" filter="url(#oGlow)" />
+            <circle cx={86 + pupil.x} cy={96 + pupil.y} r="9" fill="#2dd4bf" filter="url(#oGlow)" />
             <circle cx={86 + pupil.x} cy={96 + pupil.y} r="4" fill="#04121f" />
-            <circle cx={114 + pupil.x} cy={96 + pupil.y} r="9" fill="#e879f9" filter="url(#oGlow)" />
+            <circle cx={114 + pupil.x} cy={96 + pupil.y} r="9" fill="#a78bfa" filter="url(#oGlow)" />
             <circle cx={114 + pupil.x} cy={96 + pupil.y} r="4" fill="#1c071f" />
           </g>
 
           {/* smile arc under visor */}
-          <path d="M90 130 Q100 137 110 130" fill="none" stroke="#a3e635" strokeWidth="2.5" strokeLinecap="round" opacity="0.9" />
+          <path d="M90 130 Q100 137 110 130" fill="none" stroke="#fbbf24" strokeWidth="2.5" strokeLinecap="round" opacity="0.9" />
 
           {/* core pendant */}
-          <polygon points="100,150 110,162 100,174 90,162" fill="none" stroke="#a3e635" strokeWidth="2" />
-          <circle cx="100" cy="162" r="4" fill="#a3e635" filter="url(#oGlow)">
+          <polygon points="100,150 110,162 100,174 90,162" fill="none" stroke="#fbbf24" strokeWidth="2" />
+          <circle cx="100" cy="162" r="4" fill="#fbbf24" filter="url(#oGlow)">
             <animate attributeName="opacity" values="1;0.4;1" dur="1.6s" repeatCount="indefinite" />
           </circle>
           {/* mini equalizer bars 🎙️ */}
-          <g fill="#67e8f9">
+          <g fill="#5eead4">
             {[0, 1, 2].map((i) => (
               <rect key={i} x={118 + i * 8} y={156} width={4.5} height={10} rx={2}>
                 <animate attributeName="height" values="4;11;5;9;4" dur={`${0.65 + i * 0.15}s`} repeatCount="indefinite" />
@@ -219,10 +219,10 @@ export default function Robot() {
           </g>
 
           {/* electrons orbiting the head */}
-          <circle cx="0" cy="0" r="3.5" fill="#22d3ee" filter="url(#oGlow)">
+          <circle cx="0" cy="0" r="3.5" fill="#2dd4bf" filter="url(#oGlow)">
             <animateMotion dur="7s" repeatCount="indefinite" path="M40,102 a60,60 0 1,1 120,0 a60,60 0 1,1 -120,0" />
           </circle>
-          <circle cx="0" cy="0" r="3" fill="#e879f9" filter="url(#oGlow)">
+          <circle cx="0" cy="0" r="3" fill="#a78bfa" filter="url(#oGlow)">
             <animateMotion dur="9s" begin="1.5s" repeatCount="indefinite" path="M40,102 a60,60 0 1,0 120,0 a60,60 0 1,0 -120,0" />
           </circle>
 
@@ -230,13 +230,13 @@ export default function Robot() {
           <ellipse cx="100" cy="212" rx="56" ry="12" fill="none" stroke="#a78bfa" strokeWidth="2" strokeDasharray="10 8" opacity="0.8">
             <animate attributeName="stroke-dashoffset" from="72" to="0" dur="6s" repeatCount="indefinite" />
           </ellipse>
-          <ellipse cx="100" cy="212" rx="38" ry="8" fill="#22d3ee" opacity="0.14">
+          <ellipse cx="100" cy="212" rx="38" ry="8" fill="#2dd4bf" opacity="0.14">
             <animate attributeName="rx" values="38;32;38" dur="4.5s" repeatCount="indefinite" />
           </ellipse>
-          <ellipse cx="100" cy="212" rx="16" ry="3.5" fill="#67e8f9" opacity="0.5" />
+          <ellipse cx="100" cy="212" rx="16" ry="3.5" fill="#5eead4" opacity="0.5" />
           {/* rising energy particles */}
           {[0, 1, 2].map((i) => (
-            <circle key={i} cx={86 + i * 14} cy={204} r="2" fill="#a3e635" opacity="0.9">
+            <circle key={i} cx={86 + i * 14} cy={204} r="2" fill="#fbbf24" opacity="0.9">
               <animate attributeName="cy" values="204;184" dur={`${1.4 + i * 0.3}s`} repeatCount="indefinite" />
               <animate attributeName="opacity" values="0.9;0" dur={`${1.4 + i * 0.3}s`} repeatCount="indefinite" />
             </circle>
@@ -246,10 +246,10 @@ export default function Robot() {
 
       {/* status dots */}
       <div className="mt-1 flex items-center justify-center gap-2 text-[11px] font-semibold">
-        <span className="inline-flex items-center gap-1 rounded-full border border-lime-300/30 bg-lime-300/10 px-2.5 py-1 text-lime-300">
+        <span className="inline-flex items-center gap-1 rounded-full border border-amber-300/30 bg-amber-300/10 px-2.5 py-1 text-amber-300">
           <span className="relative flex h-1.5 w-1.5">
-            <span className="absolute h-full w-full animate-ping rounded-full bg-lime-400 opacity-75" />
-            <span className="relative h-1.5 w-1.5 rounded-full bg-lime-400" />
+            <span className="absolute h-full w-full animate-ping rounded-full bg-amber-400 opacity-75" />
+            <span className="relative h-1.5 w-1.5 rounded-full bg-amber-400" />
           </span>
           AI ONLINE
         </span>

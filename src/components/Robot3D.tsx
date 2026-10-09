@@ -52,7 +52,7 @@ export default function Robot3D({ height = 500 }: { height?: number }) {
           <ambientLight intensity={0.6} />
           <directionalLight position={[4, 6, 5]} intensity={1.6} />
           <directionalLight position={[-5, 3, -4]} intensity={0.8} color="#a78bfa" />
-          <pointLight position={[0, 2.5, 3]} intensity={10} color="#22d3ee" distance={9} />
+          <pointLight position={[0, 2.5, 3]} intensity={10} color="#2dd4bf" distance={9} />
           <RealRobot />
           <ContactShadows position={[0, -1.5, 0]} opacity={0.65} scale={6} blur={2.4} color="#000000" />
           <OrbitControls
@@ -67,7 +67,7 @@ export default function Robot3D({ height = 500 }: { height?: number }) {
         </Canvas>
       </div>
       <div className="mt-1 flex items-center justify-center gap-2 text-[11px] font-semibold">
-        <span className="inline-flex items-center gap-1 rounded-full border border-lime-300/30 bg-lime-300/10 px-2.5 py-1 text-lime-300">
+        <span className="inline-flex items-center gap-1 rounded-full border border-amber-300/30 bg-amber-300/10 px-2.5 py-1 text-amber-300">
           <Bot size={12} /> 3D LIVE
         </span>
         <span className="rounded-full border border-white/10 bg-white/5 px-2.5 py-1 text-slate-300">
