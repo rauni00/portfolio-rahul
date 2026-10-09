@@ -17,7 +17,6 @@ import {
   ExternalLink,
   GraduationCap,
   Heart,
-  Loader2,
   Mail,
   MapPin,
   Menu,
@@ -40,6 +39,7 @@ import { GitHubSection, ProcessSection } from "./components/More";
 import GsapEffects from "./components/GsapEffects";
 import AgentConsole from "./components/AgentConsole";
 import CustomCursor from "./components/CustomCursor";
+import ScrollBuddy from "./components/ScrollBuddy";
 import { SectionDivider, SectionReveal } from "./components/SectionTransitions";
 // Spline scene is loaded only for the hero; keeps the page lightweight while using the published 3D asset
 const SplineHero = lazy(() => import("./components/SplineHero"));
@@ -144,7 +144,7 @@ function SectionHeading({
       >
         <Sparkles size={13} /> {kicker}
       </span>
-      <h2 className="mt-5 font-display text-3xl font-bold text-slate-900 sm:text-5xl lg:text-[3.2rem] leading-[1.1]">
+      <h2 className="mt-5 font-display gradient-title text-3xl font-bold sm:text-5xl lg:text-[3.2rem] leading-[1.1]">
         {title}
       </h2>
       {sub && <p className="mt-4 text-slate-500 leading-relaxed">{sub}</p>}
@@ -157,6 +157,7 @@ function SectionHeading({
 export default function App() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [showTop, setShowTop] = useState(false);
+  const [chatOpen, setChatOpen] = useState(false);
   const [projectFilter, setProjectFilter] = useState("All");
   const { scrollYProgress } = useScroll();
   const progress = useSpring(scrollYProgress, { stiffness: 120, damping: 25 });
@@ -205,6 +206,18 @@ export default function App() {
         className="mouse-glow hidden md:block"
       />
 
+      {/* 3D robot — fixed ambient stage behind the WHOLE site, centered.
+          Mobile gets a light top wash for readability (no global white veil). */}
+      <div className="pointer-events-none fixed inset-0 z-0" aria-hidden="true">
+        {/* Mobile: smaller + softer so it frames nicely; desktop: full centered stage */}
+        <div className="h-full w-full origin-center scale-[0.62] opacity-60 sm:scale-100 sm:opacity-100">
+          <HeroErrorBoundary>
+            <Suspense fallback={null}>
+              <SplineHero fill />
+            </Suspense>
+          </HeroErrorBoundary>
+        </div>
+      </div>
       {/* Grid background */}
       <div className="grid-bg pointer-events-none fixed inset-0 z-0" />
 
@@ -288,6 +301,8 @@ export default function App() {
         <div data-speed="0.35" className="gs-parallax pointer-events-none absolute -left-40 top-10 h-[28rem] w-[28rem] rounded-full blur-[130px]" style={{ background: "rgba(94, 234, 212, 0.12)" }} />
         <div data-speed="0.2" className="gs-parallax pointer-events-none absolute -right-40 top-32 h-[32rem] w-[32rem] rounded-full blur-[140px]" style={{ background: "rgba(99, 102, 241, 0.12)", animationDelay: "-4s" }} />
         <div data-speed="0.45" className="gs-parallax pointer-events-none absolute bottom-0 left-1/3 h-80 w-80 rounded-full blur-[110px]" style={{ background: "rgba(251, 113, 133, 0.06)" }} />
+        {/* Mobile-only readability wash (desktop uses the right-shifted stage) */}
+        <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-[#f6f6f4]/75 via-[#f6f6f4]/30 to-transparent sm:hidden" />
 
         <div className="relative z-10 mx-auto grid max-w-6xl items-center gap-12 px-5 sm:px-8 lg:grid-cols-2">
           {/* Left: Text content */}
@@ -389,51 +404,10 @@ export default function App() {
             </div>
           </div>
 
-          {/* Right: 3D robot stage (open, no box) */}
-          <div data-gs-robot className="relative mx-auto min-h-[420px] w-full sm:min-h-[520px] lg:min-h-[640px]">
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_rgba(94,234,212,0.16),_rgba(99,102,241,0.12),_transparent_70%)] blur-2xl" />
-            <div className="absolute inset-0">
-              <HeroErrorBoundary>
-                <Suspense
-                  fallback={
-                    <div className="grid h-full place-items-center">
-                      <div className="text-center">
-                        <Loader2 size={28} className="mx-auto animate-spin text-teal-600" />
-                        <p className="mt-3 text-xs font-semibold tracking-[0.25em] text-teal-600">
-                          LOADING 3D SCENE
-                        </p>
-                      </div>
-                    </div>
-                  }
-                >
-                  <SplineHero fill />
-                </Suspense>
-              </HeroErrorBoundary>
-            </div>
-
-            {/* Floating tech chips over the scene */}
-            <div
-              data-gs-chip="a"
-              className="glass-panel pointer-events-none absolute left-2 top-6 hidden rounded-2xl px-4 py-2.5 text-xs font-semibold text-slate-900 shadow-xl sm:block"
-              style={{
-                border: "1px solid rgba(94, 234, 212, 0.2)",
-                boxShadow: "0 8px 24px rgba(15, 23, 42, 0.10)",
-              }}
-            >
-              🤖 GPT-4o + Embeddings
-            </div>
-            <div
-              data-gs-chip="b"
-              className="glass-panel pointer-events-none absolute bottom-6 right-2 hidden rounded-2xl px-4 py-2.5 text-xs font-semibold text-slate-900 shadow-xl sm:block"
-              style={{
-                border: "1px solid rgba(99, 102, 241, 0.2)",
-                boxShadow: "0 8px 24px rgba(15, 23, 42, 0.10)",
-              }}
-            >
-              ⚡ Redis • -30% load time
-            </div>
-          </div>
+          {/* Right: open window — the global 3D shows through here */}
+          <div className="hidden lg:block" aria-hidden="true" />
         </div>
+
       </section>
 
       {/* ═══════════ MARQUEE ═══════════ */}
@@ -910,7 +884,7 @@ export default function App() {
           >
             <Send size={13} /> Let's build something amazing
           </span>
-          <h2 className="mx-auto mt-5 max-w-2xl font-display text-3xl font-extrabold text-slate-900 sm:text-5xl leading-[1.1]">
+          <h2 className="mx-auto mt-5 max-w-2xl font-display gradient-title text-3xl font-extrabold sm:text-5xl leading-[1.1]">
             Have an idea? Let's turn it into a{" "}
               <span style={{
               background: "linear-gradient(135deg, #0d9488, #4f46e5)",
@@ -1036,9 +1010,10 @@ export default function App() {
         </div>
       </footer>
 
-      {/* floating: whatsapp + copy-email + back-to-top + AI chat */}
-      <FloatingActions showTop={showTop} />
-      <ChatWidget />
+      {/* floating: whatsapp + copy-email + back-to-top + AI chat + scroll buddy */}
+      <FloatingActions showTop={showTop} hidden={chatOpen} />
+      <ChatWidget open={chatOpen} onOpenChange={setChatOpen} />
+      <ScrollBuddy hide={chatOpen} />
     </div>
   );
 }

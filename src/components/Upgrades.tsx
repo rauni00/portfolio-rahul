@@ -85,7 +85,7 @@ export function ServicesSection() {
         >
           <Sparkles size={13} /> What I do
         </span>
-        <h2 className="mt-5 font-display text-3xl font-bold text-slate-900 sm:text-5xl leading-[1.1]">
+        <h2 className="mt-5 font-display gradient-title text-3xl font-bold sm:text-5xl leading-[1.1]">
           Hire me for outcomes, not just code
         </h2>
         <p className="mt-4 text-slate-500 leading-relaxed">
@@ -149,7 +149,7 @@ export function TestimonialsSection() {
         >
           <Quote size={13} /> Social proof
         </span>
-        <h2 className="mt-5 font-display text-3xl font-bold text-slate-900 sm:text-5xl leading-[1.1]">
+        <h2 className="mt-5 font-display gradient-title text-3xl font-bold sm:text-5xl leading-[1.1]">
           People I've worked with
         </h2>
       </div>
@@ -286,7 +286,7 @@ export function ContactForm() {
 
 /* ================= FLOATING ACTIONS ================= */
 
-export function FloatingActions({ showTop }: { showTop: boolean }) {
+export function FloatingActions({ showTop, hidden }: { showTop: boolean; hidden?: boolean }) {
   const [copied, setCopied] = useState(false);
   const copyEmail = async () => {
     try {
@@ -298,60 +298,72 @@ export function FloatingActions({ showTop }: { showTop: boolean }) {
     }
   };
   return (
-    <>
+    /* ── Unified action dock: evenly spaced, never overlapping ── */
+    <AnimatePresence>
+      {!hidden && (
+    <motion.div
+      layout
+      initial={{ opacity: 0, y: 20, scale: 0.9 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      exit={{ opacity: 0, y: 20, scale: 0.9 }}
+      transition={{ type: "spring", stiffness: 260, damping: 22 }}
+      className="fixed bottom-5 right-5 z-50 flex flex-col items-center gap-1.5 rounded-2xl border border-slate-900/10 bg-white/90 p-1.5 shadow-[0_12px_40px_rgba(15,23,42,0.15)] backdrop-blur-md"
+    >
+      {/* Copy email */}
+      <button
+        onClick={copyEmail}
+        aria-label="Copy email"
+        title={copied ? "Copied!" : "Copy email"}
+        className="grid h-10 w-10 place-items-center rounded-xl transition hover:scale-105 hover:bg-slate-900/[0.05]"
+        style={{ color: copied ? "#b45309" : "#0d9488" }}
+      >
+        {copied ? <Check size={18} /> : <Copy size={17} />}
+      </button>
+      <span className="h-px w-6 bg-slate-900/10" />
       {/* WhatsApp */}
       <motion.a
-        initial={{ opacity: 0, scale: 0.6 }}
-        animate={{ opacity: 1, scale: 1 }}
+        whileHover={{ scale: 1.08 }}
+        whileTap={{ scale: 0.94 }}
         href={`https://wa.me/${profile.whatsapp}?text=${encodeURIComponent(
           "Hi Rahul! I saw your portfolio and want to discuss an opportunity."
         )}`}
         target="_blank"
         rel="noreferrer"
         aria-label="Chat on WhatsApp"
-        className="fixed bottom-20 right-6 z-50 grid h-11 w-11 place-items-center rounded-full text-slate-900 shadow-xl transition hover:scale-110"
-        style={{
-          background: "#25D366",
-          boxShadow: "0 0 20px rgba(37, 211, 102, 0.3)",
-        }}
+        title="Chat on WhatsApp"
+        className="grid h-10 w-10 place-items-center rounded-xl text-white"
+        style={{ background: "#25D366" }}
       >
-        <MessageCircle size={19} />
+        <MessageCircle size={18} />
       </motion.a>
-      {/* Copy email */}
-      <button
-        onClick={copyEmail}
-        aria-label="Copy email"
-        title={copied ? "Copied!" : "Copy email"}
-        className="fixed bottom-[7.5rem] right-6 z-50 grid h-11 w-11 place-items-center rounded-full shadow-xl transition hover:scale-110"
-        style={{
-          border: `1px solid ${copied ? "rgba(251, 191, 36, 0.5)" : "rgba(15, 23, 42, 0.1)"}`,
-          background: copied ? "#fbbf24" : "#ffffff",
-          color: copied ? "#070810" : "#0d9488",
-          boxShadow: copied ? "0 0 20px rgba(251, 191, 36, 0.3)" : "0 0 20px rgba(0, 0, 0, 0.3)",
-        }}
-      >
-        {copied ? <Check size={18} /> : <Copy size={17} />}
-      </button>
-      {/* Back to top */}
-      <AnimatePresence>
+      {/* Back to top (appears after scrolling) */}
+      <AnimatePresence mode="popLayout">
         {showTop && (
-          <motion.button
-            initial={{ opacity: 0, scale: 0.7 }}
+          <motion.div
+            key="top"
+            initial={{ opacity: 0, scale: 0.5 }}
             animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.7 }}
-            onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
-            className="fixed bottom-6 right-6 z-50 grid h-11 w-11 place-items-center rounded-full text-white shadow-xl"
-            style={{
-              background: "linear-gradient(135deg, #4f46e5, #7c3aed)",
-              boxShadow: "0 0 20px rgba(79, 70, 229, 0.4)",
-            }}
-            aria-label="back to top"
+            exit={{ opacity: 0, scale: 0.5 }}
+            className="flex flex-col items-center gap-1.5"
           >
-            <ArrowUp size={18} />
-          </motion.button>
+            <span className="h-px w-6 bg-slate-900/10" />
+            <motion.button
+              whileHover={{ scale: 1.08 }}
+              whileTap={{ scale: 0.94 }}
+              onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+              className="grid h-10 w-10 place-items-center rounded-xl text-white"
+              style={{ background: "linear-gradient(135deg, #4f46e5, #7c3aed)" }}
+              aria-label="Back to top"
+              title="Back to top"
+            >
+              <ArrowUp size={18} />
+            </motion.button>
+          </motion.div>
         )}
       </AnimatePresence>
-    </>
+    </motion.div>
+      )}
+    </AnimatePresence>
   );
 }
 
@@ -595,8 +607,7 @@ function goTo(href: string) {
   }
 }
 
-export function ChatWidget() {
-  const [open, setOpen] = useState(false);
+export function ChatWidget({ open, onOpenChange }: { open: boolean; onOpenChange: (v: boolean) => void }) {
   const [input, setInput] = useState("");
   const [phase, setPhase] = useState<"idle" | "thinking" | "answering">("idle");
   const [trace, setTrace] = useState<TraceStep[]>([]);
@@ -740,7 +751,7 @@ export function ChatWidget() {
     <>
       {/* launcher */}
       <motion.button
-        onClick={() => setOpen(!open)}
+        onClick={() => onOpenChange(!open)}
         whileHover={{ scale: 1.08 }}
         whileTap={{ scale: 0.94 }}
         aria-label="Open AI agent"

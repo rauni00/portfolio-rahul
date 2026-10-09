@@ -14,7 +14,7 @@ export function ProcessSection() {
           <span className="inline-flex items-center gap-2 rounded-full border border-indigo-400/30 bg-indigo-400/10 px-4 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-indigo-600">
             <Sparkles size={13} /> How I work
           </span>
-          <h2 className="mt-4 font-display text-3xl font-bold text-slate-900 sm:text-5xl">
+          <h2 className="mt-4 font-display gradient-title text-3xl font-bold sm:text-5xl">
             Idea se launch tak — clear process
           </h2>
           <p className="mt-3 text-slate-500">

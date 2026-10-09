@@ -42,44 +42,9 @@ export default function GsapEffects() {
           "[data-gs-stat]",
           { y: 56, opacity: 0, scale: 0.88, duration: 0.7, stagger: 0.09 },
           "-=0.55"
-        )
-        .from(
-          "[data-gs-robot]",
-          { x: 130, opacity: 0, scale: 0.92, duration: 1.1 },
-          "-=1.0"
-        )
-        .from(
-          "[data-gs-chip]",
-          { scale: 0, opacity: 0, duration: 0.5, stagger: 0.12, ease: "back.out(2)" },
-          "-=0.5"
         );
 
-      /* --- 2. infinite floats (robot + chips) --- */
-      gsap.to("[data-gs-robot]", {
-        y: -14,
-        duration: 2.6,
-        yoyo: true,
-        repeat: -1,
-        ease: "sine.inOut",
-        delay: PRELOADER_MS + 2,
-      });
-      gsap.to('[data-gs-chip="a"]', {
-        y: -12,
-        rotation: 3,
-        duration: 3,
-        yoyo: true,
-        repeat: -1,
-        ease: "sine.inOut",
-        delay: PRELOADER_MS + 2,
-      });
-      gsap.to('[data-gs-chip="b"]', {
-        y: 12,
-        duration: 2.5,
-        yoyo: true,
-        repeat: -1,
-        ease: "sine.inOut",
-        delay: PRELOADER_MS + 2.4,
-      });
+      /* --- 2. (chips removed — no infinite floats needed) --- */
 
       /* --- 3. parallax blobs (scrub with scroll) --- */
       gsap.utils.toArray<HTMLElement>(".gs-parallax").forEach((el) => {
