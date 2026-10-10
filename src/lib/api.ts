@@ -71,7 +71,16 @@ export async function submitPortfolioLead(payload: { name: string; email: string
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),
   });
-  if (!res.ok) throw new Error(`Lead API ${res.status}`);
+  if (!res.ok) {
+    let message = `Lead API ${res.status}`;
+    try {
+      const data = await res.json();
+      if (data?.message) message = data.message;
+    } catch { /* keep default */ }
+    const err: any = new Error(message);
+    err.status = res.status;
+    throw err;
+  }
   return res.json();
 }
 

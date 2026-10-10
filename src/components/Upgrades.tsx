@@ -262,8 +262,15 @@ export function ContactForm() {
         setForm({ name: "", email: "", company: "", message: "" });
         setTimeout(() => setStatus("idle"), 5000);
         return;
-      } catch {
-        /* neeche fallback par jao */
+      } catch (e: any) {
+        // Rate limited — stop here, do NOT fall through to mailto
+        if (e?.status === 429) {
+          setStatus("error");
+          setError(e.message || "Too many messages — please try again later.");
+          setTimeout(() => setStatus("idle"), 5000);
+          return;
+        }
+        /* other failures fall through below */
       }
     }
     // 2) Legacy endpoint (Formspree/Web3Forms)
