@@ -69,14 +69,40 @@ interface GhUser {
   following: number;
 }
 
+/* Curated fallback — shown when the GitHub API is rate-limited/offline,
+   so recruiters never see an empty section. */
+const FALLBACK_REPOS: Repo[] = [
+  { id: 1, name: "ultimabot-ai", description: "AI chatbot + email bot + voice bots (GPT-4o, embeddings, Redis).", html_url: "https://app.ultimabot.ai", stargazers_count: 0, forks_count: 0, language: "TypeScript" },
+  { id: 2, name: "ask-welfore", description: "Diet tracking app with 5K+ users (React, Node, MongoDB).", html_url: "https://app.askwelfore.com", stargazers_count: 0, forks_count: 0, language: "JavaScript" },
+  { id: 3, name: "pdf-invoice-editor", description: "Drag-and-drop invoice template builder.", html_url: "https://pdf-invoice-editor.netlify.app", stargazers_count: 0, forks_count: 0, language: "TypeScript" },
+];
+
+const GH_CACHE_KEY = "rr-github-cache-v1";
+const GH_CACHE_TTL = 24 * 60 * 60 * 1000; // 24h
+
 export function GitHubSection() {
   const [repos, setRepos] = useState<Repo[] | null>(null);
   const [user, setUser] = useState<GhUser | null>(null);
   const [failed, setFailed] = useState(false);
+  const [cached, setCached] = useState(false);
   const username = profile.githubUsername;
 
   useEffect(() => {
     let alive = true;
+    // Serve stale cache instantly (avoids empty flash + rate-limit pain)
+    try {
+      const raw = localStorage.getItem(GH_CACHE_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw) as { at: number; repos: Repo[]; user: GhUser };
+        if (Date.now() - parsed.at < GH_CACHE_TTL && parsed.repos?.length) {
+          setRepos(parsed.repos);
+          setUser(parsed.user);
+          setCached(true);
+        }
+      }
+    } catch {
+      /* storage unavailable — fetch live */
+    }
     (async () => {
       try {
         const [r1, r2] = await Promise.all([
@@ -89,14 +115,25 @@ export function GitHubSection() {
         if (alive) {
           setRepos(reposJson);
           setUser(userJson);
+          setCached(false);
+          try {
+            localStorage.setItem(GH_CACHE_KEY, JSON.stringify({ at: Date.now(), repos: reposJson, user: userJson }));
+          } catch {
+            /* ignore */
+          }
         }
       } catch {
-        if (alive) setFailed(true);
+        // Live fetch failed: keep cache if we have it, else curated fallback
+        if (alive) {
+          setRepos((prev) => prev ?? FALLBACK_REPOS);
+          setFailed(true);
+        }
       }
     })();
     return () => {
       alive = false;
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [username]);
 
   return (
@@ -146,11 +183,16 @@ export function GitHubSection() {
         </div>
       )}
 
-      {failed && (
-        <div className="mx-auto max-w-xl rounded-3xl border border-slate-900/10 bg-white p-8 text-center">
+      {cached && repos && (
+        <p className="mx-auto mb-4 max-w-xl text-center text-[11px] text-slate-400">
+          Showing cached GitHub data (live API unreachable) — auto-refreshes when online.
+        </p>
+      )}
+      {failed && !cached && (
+        <div className="mx-auto mb-6 max-w-xl rounded-3xl border border-slate-900/10 bg-white p-8 text-center">
           <Users className="mx-auto text-slate-500" size={28} />
           <p className="mt-3 text-sm text-slate-500">
-            GitHub isn't reachable right now (rate-limit / offline). View the profile directly:
+            GitHub API unreachable right now (rate-limit / offline) — showing curated highlights. View the profile directly:
           </p>
           <a
             href={`https://github.com/${username}`}

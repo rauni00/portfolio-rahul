@@ -10,10 +10,11 @@ import {
   Quote,
   Send,
   Sparkles,
+  Star,
   Volume2,
   X,
 } from "lucide-react";
-import { chatFaqs, profile, services, testimonials } from "../data";
+import { chatFaqs, profile, services, testimonialNote, testimonials } from "../data";
 
 /* ================= PRELOADER (cinematic) ================= */
 
@@ -178,6 +179,11 @@ export function TestimonialsSection() {
             transition={{ duration: 0.4 }}
           >
             <Quote className="mx-auto" size={28} style={{ color: "#5eead4", filter: "drop-shadow(0 0 8px rgba(94, 234, 212, 0.4))" }} />
+            <div className="mt-3 flex items-center justify-center gap-1" aria-label={`${cur.rating ?? 5} out of 5 stars`}>
+              {Array.from({ length: cur.rating ?? 5 }).map((_, s) => (
+                <Star key={s} size={14} className="text-amber-500" fill="currentColor" />
+              ))}
+            </div>
             <p className="mt-4 text-lg leading-relaxed text-slate-700">"{cur.quote}"</p>
             <div className="mt-6 flex items-center justify-center gap-3">
               <span
@@ -196,7 +202,10 @@ export function TestimonialsSection() {
             </div>
           </motion.div>
         </AnimatePresence>
-        <div className="mt-6 flex justify-center gap-2">
+        <p className="mx-auto mt-6 max-w-md text-[11px] leading-relaxed text-slate-400">
+          {testimonialNote}
+        </p>
+        <div className="mt-4 flex justify-center gap-2">
           {testimonials.map((_, i) => (
             <button
               key={i}
@@ -220,15 +229,49 @@ export function TestimonialsSection() {
 
 export function ContactForm() {
   const [form, setForm] = useState({ name: "", email: "", message: "" });
-  const [sent, setSent] = useState(false);
-  const submit = (e: React.FormEvent) => {
+  const [status, setStatus] = useState<"idle" | "sending" | "sent" | "error">("idle");
+  const [error, setError] = useState("");
+  // Optional backend: set VITE_CONTACT_ENDPOINT to a Formspree/Web3Forms URL
+  // e.g. https://formspree.io/f/xxxx or https://api.web3forms.com/submit
+  const endpoint = (import.meta as unknown as { env?: Record<string, string> }).env?.VITE_CONTACT_ENDPOINT || "";
+  const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.name.trim() || !form.email.trim() || !form.message.trim()) return;
-    const subject = encodeURIComponent(`Portfolio inquiry from ${form.name}`);
-    const body = encodeURIComponent(`Name: ${form.name}\nEmail: ${form.email}\n\n${form.message}`);
-    window.location.href = `mailto:${profile.email}?subject=${subject}&body=${body}`;
-    setSent(true);
-    setTimeout(() => setSent(false), 4000);
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())) {
+      setError("Please enter a valid email address.");
+      return;
+    }
+    setError("");
+    // No backend configured → mailto fallback (zero-setup, always works)
+    if (!endpoint) {
+      const subject = encodeURIComponent(`Portfolio inquiry from ${form.name}`);
+      const body = encodeURIComponent(`Name: ${form.name}\nEmail: ${form.email}\n\n${form.message}`);
+      window.location.href = `mailto:${profile.email}?subject=${subject}&body=${body}`;
+      setStatus("sent");
+      setTimeout(() => setStatus("idle"), 4000);
+      return;
+    }
+    setStatus("sending");
+    try {
+      const res = await fetch(endpoint, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Accept: "application/json" },
+        body: JSON.stringify({ name: form.name.trim(), email: form.email.trim(), message: form.message.trim() }),
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      setStatus("sent");
+      setForm({ name: "", email: "", message: "" });
+      setTimeout(() => setStatus("idle"), 5000);
+    } catch {
+      setStatus("error");
+      setError("Couldn't send just now — your email app will open instead.");
+      const subject = encodeURIComponent(`Portfolio inquiry from ${form.name}`);
+      const body = encodeURIComponent(`Name: ${form.name}\nEmail: ${form.email}\n\n${form.message}`);
+      window.setTimeout(() => {
+        window.location.href = `mailto:${profile.email}?subject=${subject}&body=${body}`;
+      }, 800);
+      setTimeout(() => setStatus("idle"), 5000);
+    }
   };
 
   const inputStyle = {
@@ -267,18 +310,31 @@ export function ContactForm() {
       />
       <button
         type="submit"
-        className="inline-flex items-center justify-center gap-2 rounded-full px-8 py-3.5 text-sm font-bold text-white transition hover:scale-[1.02] sm:col-span-2"
+        disabled={status === "sending"}
+        className="inline-flex items-center justify-center gap-2 rounded-full px-8 py-3.5 text-sm font-bold text-white transition hover:scale-[1.02] disabled:opacity-60 sm:col-span-2"
         style={{
           background: "linear-gradient(135deg, #4f46e5, #7c3aed)",
           boxShadow: "0 0 25px rgba(79, 70, 229, 0.35)",
         }}
         data-cursor-hover
       >
-        <Send size={15} /> {sent ? "Opening your email app… ✓" : "Send Message"}
+        {status === "sending" ? <Loader2 size={15} className="animate-spin" /> : <Send size={15} />}
+        {status === "sending"
+          ? "Sending…"
+          : status === "sent"
+            ? endpoint
+              ? "Message sent ✓ — reply within 24h"
+              : "Opening your email app… ✓"
+            : "Send Message"}
       </button>
-      {sent && (
+      {error && (
+        <p role="alert" className="text-center text-xs text-rose-600 sm:col-span-2">
+          {error}
+        </p>
+      )}
+      {status === "sent" && !error && (
         <p className="text-center text-xs text-amber-600 sm:col-span-2">
-          Thanks {form.name.split(" ")[0]}! Your email app should have opened — expect a reply within 24 hours.
+          Thanks! Expect a reply within 24 hours.
         </p>
       )}
     </form>
@@ -503,7 +559,7 @@ const INTENTS: Intent[] = [
     id: "resume", label: "document · resume",
     match: ["resume", "cv", "cvv"],
     sources: 1,
-    reply: "Hit the 'Download Resume' button in the hero section — it auto-downloads the PDF. Or email rahulrauniyar700@gmail.com and he'll send it over with a note on relevant work.",
+    reply: "Hit the 'Download Resume' button in the hero section — it downloads the PDF directly. Or email rahulrauniyar700@gmail.com and he'll send it over with a note on relevant work.",
     followups: ["Hire Rahul?", "Experience?"],
   },
   {
@@ -639,14 +695,11 @@ export function ChatWidget({ open, onOpenChange }: { open: boolean; onOpenChange
     };
   }, []);
 
-  // 🔊 Voice keys — BG greeting and CHAT greeting tracked SEPARATELY.
-  // sessionStorage is primary; an in-memory fallback covers browsers where
-  // storage throws (blocked cookies / private mode) — otherwise the greeting
-  // would silently never play AND never store a key.
-  const BG_KEY = "rr-voice-bg";
+  // 🔊 Voice — chat greeting only (no autoplay on site load; browsers block it
+  // and users find it intrusive). Each bot answer still has a per-message
+  // listen button, which is a real user gesture so it always plays.
   const CHAT_KEY = "rr-voice-chat";
   const voiceMem: Record<string, boolean> = useMemo(() => ({}), []);
-  const BG_TEXT = "Hi! I'm Rahul's AI agent. Ask me about his experience, projects, or hiring!";
   const CHAT_TEXT = "Hey! I'm Rahul's AI agent. Ask me about experience, projects, or hiring!";
 
   const alreadyGreeted = (key: string) => {
@@ -695,52 +748,17 @@ export function ChatWidget({ open, onOpenChange }: { open: boolean; onOpenChange
       }
     };
 
-  // Background greeting: first visit → speaks IMMEDIATELY on site load.
-  const speakBg = () => {
-    if (alreadyGreeted(BG_KEY)) {
-      console.info("[voice] bg already greeted, skipping");
-      return;
-    }
-    dispatch(BG_TEXT, BG_KEY);
-  };
-
-  // BG greeting fires the moment the site loads (first visit only).
+  // Warm up the async voice list so the chat greeting has a voice ready.
   useEffect(() => {
     try {
-      window.speechSynthesis?.getVoices(); // warm up async voice list
+      window.speechSynthesis?.getVoices();
     } catch {
       /* ignore */
     }
-    speakBg();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // First click/keypress anywhere = guaranteed audible moment for the BG
-  // greeting — EXCEPT on the chat launcher (its own greeting speaks there,
-  // otherwise you'd hear it TWICE). Skipped while chat is open.
-  useEffect(() => {
-    const onFirstGesture = (e: Event) => {
-      const t = e.target as HTMLElement | null;
-      if (t && typeof t.closest === "function" && t.closest("[data-chat-launcher]")) return;
-      if (open) return;
-      if (alreadyGreeted(BG_KEY)) {
-        window.removeEventListener("pointerdown", onFirstGesture);
-        window.removeEventListener("keydown", onFirstGesture);
-        return;
-      }
-      speakBg();
-    };
-    window.addEventListener("pointerdown", onFirstGesture);
-    window.addEventListener("keydown", onFirstGesture);
-    return () => {
-      window.removeEventListener("pointerdown", onFirstGesture);
-      window.removeEventListener("keydown", onFirstGesture);
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open]);
-
-  // Chat-open greeting: separate key, plays once per tab. Never overlaps
-  // an in-progress utterance (that's what caused the double-voice).
+  // Chat-open greeting: plays once per tab on launcher click (a real user
+  // gesture, so it isn't blocked). Never overlaps an in-progress utterance.
   useEffect(() => {
     speakOnOpenRef.current = () => {
       if (alreadyGreeted(CHAT_KEY)) {

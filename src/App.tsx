@@ -154,11 +154,54 @@ function SectionHeading({
 
 /* ---------- main ---------- */
 
+/* Load the heavy 3D scene only when it makes sense:
+   desktop pointer + no reduced-motion + not a small screen,
+   deferred until after first paint so LCP isn't blocked. */
+function useShouldLoad3D() {
+  const [ok, setOk] = useState(false);
+  useEffect(() => {
+    const mqFine = window.matchMedia("(pointer: fine)");
+    const mqMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const mqWide = window.matchMedia("(min-width: 640px)");
+    const compute = () => setOk(mqFine.matches && !mqMotion.matches && mqWide.matches);
+    // Defer past first paint: idle callback with timeout fallback
+    const w = window as unknown as {
+      requestIdleCallback?: (cb: () => void, opts?: { timeout: number }) => number;
+      cancelIdleCallback?: (id: number) => void;
+    };
+    const schedule = (fn: () => void): number => {
+      if (typeof w.requestIdleCallback === "function") {
+        return w.requestIdleCallback(fn, { timeout: 2500 });
+      }
+      return window.setTimeout(fn, 1200);
+    };
+    const cancel = (id: number) => {
+      if (typeof w.cancelIdleCallback === "function") {
+        w.cancelIdleCallback(id);
+      } else {
+        clearTimeout(id);
+      }
+    };
+    const id = schedule(compute);
+    mqFine.addEventListener?.("change", compute);
+    mqWide.addEventListener?.("change", compute);
+    mqMotion.addEventListener?.("change", compute);
+    return () => {
+      cancel(id);
+      mqFine.removeEventListener?.("change", compute);
+      mqWide.removeEventListener?.("change", compute);
+      mqMotion.removeEventListener?.("change", compute);
+    };
+  }, []);
+  return ok;
+}
+
 export default function App() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [showTop, setShowTop] = useState(false);
   const [chatOpen, setChatOpen] = useState(false);
   const [projectFilter, setProjectFilter] = useState("All");
+  const shouldLoad3D = useShouldLoad3D();
   const { scrollYProgress } = useScroll();
   const progress = useSpring(scrollYProgress, { stiffness: 120, damping: 25 });
 
@@ -169,21 +212,38 @@ export default function App() {
   const glowY = useTransform(my, (v) => v - 300);
 
   useEffect(() => {
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
     const move = (e: MouseEvent) => {
       mx.set(e.clientX);
       my.set(e.clientY);
     };
     const onScroll = () => setShowTop(window.scrollY > 600);
     window.addEventListener("mousemove", move);
-    window.addEventListener("scroll", onScroll);
+    window.addEventListener("scroll", onScroll, { passive: true });
     return () => {
       window.removeEventListener("mousemove", move);
       window.removeEventListener("scroll", onScroll);
     };
   }, [mx, my]);
 
+  // Close mobile menu on Escape for keyboard users
+  useEffect(() => {
+    if (!menuOpen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setMenuOpen(false);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [menuOpen]);
+
   return (
     <div className="relative min-h-screen bg-[#f6f6f4] font-body text-slate-700 antialiased">
+      <a
+        href="#home"
+        className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[100] focus:rounded-full focus:bg-white focus:px-5 focus:py-2 focus:text-sm focus:font-bold focus:text-slate-900 focus:shadow-xl"
+      >
+        Skip to content
+      </a>
       <Preloader />
       <GsapEffects />
       <CustomCursor />
@@ -206,18 +266,18 @@ export default function App() {
         className="mouse-glow hidden md:block"
       />
 
-      {/* 3D robot — fixed ambient stage behind the WHOLE site, centered.
-          Mobile gets a light top wash for readability (no global white veil). */}
-      <div className="pointer-events-none fixed inset-0 z-0" aria-hidden="true">
-        {/* Mobile: smaller + softer so it frames nicely; desktop: full centered stage */}
-        <div className="h-full w-full origin-center scale-[0.62] opacity-60 sm:scale-100 sm:opacity-100">
-          <HeroErrorBoundary>
-            <Suspense fallback={null}>
-              <SplineHero fill />
-            </Suspense>
-          </HeroErrorBoundary>
+      {/* 3D robot — desktop-only ambient stage (mobile + reduced-motion skip it). */}
+      {shouldLoad3D && (
+        <div className="pointer-events-none fixed inset-0 z-0" aria-hidden="true">
+          <div className="h-full w-full origin-center">
+            <HeroErrorBoundary>
+              <Suspense fallback={null}>
+                <SplineHero fill />
+              </Suspense>
+            </HeroErrorBoundary>
+          </div>
         </div>
-      </div>
+      )}
       {/* Grid background */}
       <div className="grid-bg pointer-events-none fixed inset-0 z-0" />
 
@@ -267,7 +327,9 @@ export default function App() {
           <button
             onClick={() => setMenuOpen(!menuOpen)}
             className="grid h-10 w-10 place-items-center rounded-xl border border-slate-900/10 text-slate-900 lg:hidden"
-            aria-label="menu"
+            aria-label={menuOpen ? "Close menu" : "Open menu"}
+            aria-expanded={menuOpen}
+            aria-controls="mobile-menu"
           >
             {menuOpen ? <X size={20} /> : <Menu size={20} />}
           </button>
@@ -275,6 +337,7 @@ export default function App() {
         <AnimatePresence>
           {menuOpen && (
             <motion.nav
+              id="mobile-menu"
               initial={{ opacity: 0, y: -12 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -12 }}
@@ -670,6 +733,11 @@ export default function App() {
                   </h3>
                   <p className="text-sm font-semibold text-indigo-600">{p.subtitle}</p>
                   <p className="mt-3 text-sm leading-relaxed text-slate-500">{p.description}</p>
+                  {p.impact && (
+                    <p className="mt-3 inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[11px] font-bold text-teal-700" style={{ border: "1px solid rgba(94, 234, 212, 0.25)", background: "rgba(94, 234, 212, 0.07)" }}>
+                      ✓ {p.impact}
+                    </p>
+                  )}
                   <div className="mt-4 flex flex-wrap gap-2">
                     {p.tech.map((t) => (
                       <span
@@ -921,6 +989,21 @@ export default function App() {
             >
               <Phone size={16} /> {profile.phone}
             </a>
+            {profile.calendly && (
+              <a
+                href={profile.calendly}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center justify-center gap-2 rounded-full px-6 py-3.5 text-sm font-bold text-teal-700 transition hover:scale-105 sm:px-8"
+                style={{
+                  border: "1px solid rgba(94, 234, 212, 0.3)",
+                  background: "rgba(94, 234, 212, 0.08)",
+                }}
+                data-cursor-hover
+              >
+                📅 Book a 30-min call
+              </a>
+            )}
           </div>
           <div className="mt-6 flex flex-wrap justify-center gap-2">
             {socials.map((s) => (

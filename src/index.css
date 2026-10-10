@@ -42,14 +42,21 @@ a {
   -webkit-tap-highlight-color: transparent;
 }
 
-/* ─── CUSTOM CURSOR (desktop only, fast follow) ─── */
+/* ─── CUSTOM CURSOR (desktop only, additive — native cursor stays visible for a11y) ─── */
 
-@media (pointer: fine) {
-  body {
-    cursor: none;
+@media (prefers-reduced-motion: reduce) {
+  .cursor-dot,
+  .cursor-ring,
+  .mouse-glow,
+  .buddy-bob,
+  .buddy-eye {
+    animation: none !important;
   }
-  a, button, [role="button"] {
-    cursor: none;
+  .animate-marquee {
+    animation: none !important;
+  }
+  html {
+    scroll-behavior: auto;
   }
 }
 

@@ -29,8 +29,10 @@ function headingY(id: string): number | null {
   if (!head) return null;
   const r = head.getBoundingClientRect();
   const y = r.top + r.height * 0.5;
-  // Clamp: never enter the floating-button zone (bottom ~260px) or under the header.
-  return Math.min(Math.max(y, 130), window.innerHeight - 300);
+  // Clamp: never enter the floating-dock zone (bottom ~340px) or under the header.
+  // Extra clearance on small screens where the dock + chat launcher crowd the corner.
+  const bottomClearance = window.innerWidth < 640 ? 360 : 320;
+  return Math.min(Math.max(y, 130), window.innerHeight - bottomClearance);
 }
 
 export default function ScrollBuddy({ hide }: { hide?: boolean }) {

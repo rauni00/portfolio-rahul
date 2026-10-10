@@ -11,8 +11,8 @@ Built with **React 19 + TypeScript + Vite + Tailwind CSS 4**, with a 3D hero rob
 
 ## ✨ Features
 
-- **Animated hero** — typewriter roles, stats count-up, mouse glow, scroll progress bar
-- **3D robot** (`src/components/Robot3D.tsx`, lazy-loaded) with `HeroErrorBoundary` + `AgentConsole` fallback so the page never goes blank on WebGL failure
+- **Animated hero** — stats count-up, mouse glow, scroll progress bar
+- **3D robot** (`src/components/SplineHero.tsx`, lazy-loaded, desktop-only + deferred past first paint) with `HeroErrorBoundary` + `AgentConsole` fallback so the page never goes blank on WebGL failure
 - **GSAP effects** (`GsapEffects.tsx`) + Framer Motion scroll reveals, marquee skills strip
 - **Sections:** Services, Skills, Experience timeline, filterable Projects, Live GitHub, Testimonials, Education + Achievements, Work Process, Contact
 - **AI chat widget** — rule-based portfolio assistant with quick prompts + voice greeting (SpeechSynthesis, once per tab)
@@ -61,9 +61,11 @@ All text, links, skills, jobs, projects, FAQs live in **`src/data.ts`** — the 
 - `services`, `testimonials`, `processSteps`, `chatFaqs`, `navLinks`
 
 Tips:
-- Resume: put PDF at `public/resume.pdf` and set `resumeLink: "/resume.pdf"` (auto-download enabled for `.pdf` links).
-- Photo: put at `public/photo.jpg` and set `photo: "/photo.jpg"`.
-- GitHub section fetches from `profile.githubUsername` via the public GitHub API.
+- Resume: `public/resume.pdf` ships with the repo (replace it with your detailed resume). `resumeLink: "/resume.pdf"` auto-downloads.
+- OG image: `public/og-cover.png` (1200×630) powers LinkedIn/WhatsApp previews — replace with a real screenshot when ready.
+- Calendly: set `profile.calendly` to your scheduling link to show a "Book a 30-min call" button.
+- Contact form: works out of the box via `mailto:` fallback. Set `VITE_CONTACT_ENDPOINT` (Formspree/Web3Forms URL) in `.env` for direct POST delivery.
+- GitHub section fetches from `profile.githubUsername` via the public GitHub API (24h localStorage cache + curated fallback when rate-limited).
 
 ## 📁 Project Structure
 
@@ -79,13 +81,13 @@ Tips:
 │   ├── App.tsx                 # all page sections
 │   ├── data.ts                 # 👈 edit only this file
 │   └── components/
-│       ├── Robot3D.tsx         # lazy 3D hero
+│       ├── SplineHero.tsx      # lazy 3D hero (desktop-only)
 │       ├── AgentConsole.tsx    # 3D fallback UI
 │       ├── GsapEffects.tsx     # GSAP parallax/entrance
 │       ├── Upgrades.tsx        # Preloader, Services, Testimonials, ContactForm, FloatingActions, ChatWidget
 │       ├── More.tsx            # ProcessSection, GitHubSection
-│       ├── Robot.tsx
-│       └── GsapEffects.tsx
+│       ├── CustomCursor.tsx    # additive cursor (native cursor stays visible)
+│       └── ScrollBuddy.tsx     # scroll companion
 ├── vite.config.ts
 └── tsconfig*.json
 ```

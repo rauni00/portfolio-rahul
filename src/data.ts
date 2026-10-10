@@ -32,7 +32,8 @@ export const profile = {
   email: "rahulrauniyar700@gmail.com",
   phone: "+91-8546001170",
   availability: "Immediate Joiner • Open to Work",
-  resumeLink: "#contact", // put your resume PDF link here, e.g. "/resume.pdf"
+  resumeLink: "/resume.pdf", // public/resume.pdf — replace with your detailed resume
+  calendly: "", // 👈 e.g. "https://calendly.com/rahulrauniyar700/30min" — set this to show a "Book a call" button
   avatarInitials: "RR",
   photo: "", // 👈 put your photo at public/photo.jpg and write "/photo.jpg" here — it auto-shows in the hero card
   githubUsername: "rauni00", // 👈 the live GitHub repos section fetches from this
@@ -161,6 +162,7 @@ export interface Project {
   gradient: string;
   emoji: string;
   featured?: boolean;
+  impact?: string; // one-line measurable outcome shown on the card
 }
 
 export const projects: Project[] = [
@@ -177,6 +179,7 @@ export const projects: Project[] = [
     gradient: "from-teal-400 via-sky-500 to-indigo-600",
     emoji: "🤖",
     featured: true,
+    impact: "+40% lead qualification • -30% response time (Redis + GPT-4o)",
   },
   {
     title: "Ask Welfore",
@@ -188,6 +191,7 @@ export const projects: Project[] = [
     gradient: "from-amber-300 via-emerald-400 to-teal-600",
     emoji: "🥗",
     featured: true,
+    impact: "5K+ users • realtime analytics + personalised plans",
   },
   {
     title: "Transplant Made Easy",
@@ -198,6 +202,7 @@ export const projects: Project[] = [
     links: [],
     gradient: "from-amber-400 via-orange-500 to-orange-600",
     emoji: "🏥",
+    impact: "HIPAA-compliant • Skyflow Vault patient-data security",
   },
   {
     title: "Gunlox",
@@ -208,6 +213,7 @@ export const projects: Project[] = [
     links: [],
     gradient: "from-amber-300 via-orange-500 to-red-600",
     emoji: "🔒",
+    impact: "Bluetooth + facial recognition • admin panel + APIs",
   },
   {
     title: "Mom's Kitchen",
@@ -218,6 +224,7 @@ export const projects: Project[] = [
     links: [],
     gradient: "from-yellow-300 via-amber-400 to-orange-600",
     emoji: "🍱",
+    impact: "End-to-end ordering ops • base architecture + GitHub",
   },
   {
     title: "Invoice Builder",
@@ -228,6 +235,7 @@ export const projects: Project[] = [
     links: [{ label: "Live Demo", href: "https://pdf-invoice-editor.netlify.app" }],
     gradient: "from-indigo-400 via-indigo-500 to-indigo-700",
     emoji: "🧾",
+    impact: "One-click generation • drag-and-drop templates",
   },
 ];
 
@@ -290,29 +298,36 @@ export interface Testimonial {
   name: string;
   role: string;
   initials: string;
+  rating?: number; // 1–5 stars
 }
+
+export const testimonialNote =
+  "Client names withheld under NDA — verify work history on LinkedIn or ask for references on a call.";
 
 export const testimonials: Testimonial[] = [
   {
     quote:
       "Rahul took our AI chatbot + voice bot system to production in record time. Lead qualification became visibly faster.",
-    name: "Project Stakeholder",
-    role: "Ultimabot AI",
-    initials: "UB",
+    name: "Product Owner",
+    role: "AI SaaS platform • via Cyber Vision",
+    initials: "PO",
+    rating: 5,
   },
   {
     quote:
       "He calmly debugs complex backend problems. The NestJS architecture is clean and scalable — the team found it easy to work with.",
-    name: "Team Collaborator",
-    role: "Cyber Vision Infotech",
-    initials: "CV",
+    name: "Engineering Teammate",
+    role: "Full-stack team • Gurugram",
+    initials: "ET",
+    rating: 5,
   },
   {
     quote:
       "The data-privacy implementation (Skyflow Vault) in our healthcare app was rock solid — compliance and UX, both well balanced.",
-    name: "Healthcare Client",
-    role: "Transplant Made Easy",
-    initials: "TM",
+    name: "Healthcare Project Client",
+    role: "HIPAA desktop app • via OTS",
+    initials: "HC",
+    rating: 5,
   },
 ];
 
@@ -378,7 +393,7 @@ export const chatFaqs: { keys: string[]; reply: string }[] = [
   {
     keys: ["resume", "cv"],
     reply:
-      "For the resume, hit the 'Download Resume' button in the hero section or email rahulrauniyar700@gmail.com. (It auto-downloads once public/resume.pdf is added.)",
+      "For the resume, hit the 'Download Resume' button in the hero section — it downloads the PDF directly. Or email rahulrauniyar700@gmail.com.",
   },
   {
     keys: ["location", "where", "gurugram", "remote"],

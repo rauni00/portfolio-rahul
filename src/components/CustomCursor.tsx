@@ -107,7 +107,8 @@ export default function CustomCursor() {
     const onEnter = () => setVisible(true);
 
     const onClick = (e: MouseEvent) => {
-      // Click ripple.
+      // Click ripple (skip for reduced-motion users).
+      if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
       const ripple = document.createElement("div");
       ripple.className = "ripple";
       ripple.style.left = `${e.clientX - 40}px`;
