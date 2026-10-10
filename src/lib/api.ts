@@ -75,15 +75,36 @@ export async function submitPortfolioLead(payload: { name: string; email: string
   return res.json();
 }
 
-/* One hit per portfolio open — saved as a visit log in email-bot */
+/* One hit per portfolio open — saved as a visit log in email-bot.
+   Once per tab session only: refreshes reuse the same sessionStorage,
+   so hammering refresh no longer inflates "Visits today".
+   A new tab/window counts as a new visit.
+   Owner opt-out: open the site once with ?notrack=1 — this device's
+   future visits are then marked internal and hidden from CMS stats. */
 let visitSent = false;
+const VISIT_KEY = "rr-visit-logged";
+const NOTRACK_KEY = "rr-no-track";
 export function logPortfolioVisit(page = "/") {
   if (!isApiEnabled || visitSent) return;
+  let internal = false;
+  try {
+    if (new URLSearchParams(window.location.search).get("notrack") === "1") {
+      localStorage.setItem(NOTRACK_KEY, "1");
+    }
+    internal = localStorage.getItem(NOTRACK_KEY) === "1";
+    if (sessionStorage.getItem(VISIT_KEY)) {
+      visitSent = true;
+      return;
+    }
+    sessionStorage.setItem(VISIT_KEY, "1");
+  } catch {
+    /* storage unavailable — fall through, module flag still guards repeats */
+  }
   visitSent = true;
   authedFetch(`${BASE}/api/portfolio/visits`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ page, referrer: document.referrer || "" }),
+    body: JSON.stringify({ page, referrer: document.referrer || "", internal }),
   }).catch(() => {});
 }
 
