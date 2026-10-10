@@ -54,18 +54,8 @@ class HeroErrorBoundary extends Component<{ children: React.ReactNode }, { faile
     return this.state.failed ? <AgentConsole /> : this.props.children;
   }
 }
-import {
-  profile,
-  socials,
-  stats,
-  skillGroups,
-  marqueeSkills,
-  experiences,
-  projects,
-  education,
-  achievements,
-  navLinks,
-} from "./data";
+import { usePortfolio } from "./lib/usePortfolio";
+import { resumeDownloadUrl, downloadResume } from "./lib/api";
 
 const currentYear = new Date().getFullYear();
 
@@ -201,6 +191,10 @@ export default function App() {
   const [showTop, setShowTop] = useState(false);
   const [chatOpen, setChatOpen] = useState(false);
   const [projectFilter, setProjectFilter] = useState("All");
+  // Dynamic content: from the email-bot API, with data.ts as fallback
+  const { data: pd } = usePortfolio();
+  const { profile, socials, stats, skillGroups, marqueeSkills, experiences, projects, education, achievements, navLinks } = pd;
+  const resumeUrl = resumeDownloadUrl(profile.resumeLink);
   const shouldLoad3D = useShouldLoad3D();
   const { scrollYProgress } = useScroll();
   const progress = useSpring(scrollYProgress, { stiffness: 120, damping: 25 });
@@ -423,10 +417,14 @@ export default function App() {
                 <ArrowRight size={16} className="transition-transform group-hover:translate-x-1" />
               </a>
               <a
-                href={profile.resumeLink}
-                {...(profile.resumeLink.endsWith(".pdf")
-                  ? { download: "Rahul-Rauniyar-Resume.pdf" }
-                  : {})}
+                href={resumeUrl}
+                onClick={(e) => {
+                  // Token-authenticated download (Settings resume); falls back to plain link
+                  e.preventDefault();
+                  downloadResume("Rahul-Rauniyar-Resume.pdf").then((ok) => {
+                    if (!ok) window.location.href = resumeUrl;
+                  });
+                }}
                 className="magnetic inline-flex items-center gap-2 rounded-full bg-white px-7 py-3.5 text-sm font-semibold text-slate-900 shadow-[0_2px_12px_rgba(15,23,42,0.08)] transition hover:shadow-[0_8px_24px_rgba(15,23,42,0.12)]"
                 style={{ border: "1px solid rgba(15, 23, 42, 0.12)" }}
                 data-cursor-hover

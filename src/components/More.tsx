@@ -1,11 +1,14 @@
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { Code2, ExternalLink, GitFork, Loader2, Sparkles, Star, Users } from "lucide-react";
-import { processSteps, profile } from "../data";
+import { processSteps as fallbackSteps, profile as fallbackProfile } from "../data";
+import { usePortfolio } from "../lib/usePortfolio";
 
 /* ================= WORK PROCESS ================= */
 
 export function ProcessSection() {
+  const { data } = usePortfolio();
+  const processSteps = data.processSteps?.length ? data.processSteps : fallbackSteps;
   return (
     <section id="process" className="relative z-10 overflow-hidden border-y border-slate-900/10 bg-slate-900/[0.03] py-20">
       <div data-speed="0.3" className="gs-parallax pointer-events-none absolute -right-40 top-10 h-80 w-80 rounded-full blur-[120px]" style={{ background: "rgba(99, 102, 241, 0.08)" }} />
@@ -85,7 +88,8 @@ export function GitHubSection() {
   const [user, setUser] = useState<GhUser | null>(null);
   const [failed, setFailed] = useState(false);
   const [cached, setCached] = useState(false);
-  const username = profile.githubUsername;
+  const { data } = usePortfolio();
+  const username = data.profile?.githubUsername || fallbackProfile.githubUsername;
 
   useEffect(() => {
     let alive = true;

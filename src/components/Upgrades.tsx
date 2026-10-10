@@ -14,12 +14,16 @@ import {
   Volume2,
   X,
 } from "lucide-react";
-import { chatFaqs, profile, services, testimonialNote, testimonials } from "../data";
+import { chatFaqs as fallbackFaqs, profile as fallbackProfile, services as fallbackServices, testimonialNote as fallbackNote, testimonials as fallbackTestimonials } from "../data";
+import { usePortfolio } from "../lib/usePortfolio";
+import { submitPortfolioLead, saveChatSession, isApiEnabled } from "../lib/api";
 
 /* ================= PRELOADER (cinematic) ================= */
 
 export function Preloader() {
   const [done, setDone] = useState(false);
+  const { data } = usePortfolio();
+  const profile = data.profile ?? fallbackProfile;
   useEffect(() => {
     const t = setTimeout(() => setDone(true), 1400);
     return () => clearTimeout(t);
@@ -73,6 +77,8 @@ export function Preloader() {
 /* ================= SERVICES ================= */
 
 export function ServicesSection() {
+  const { data } = usePortfolio();
+  const services = data.services?.length ? data.services : fallbackServices;
   return (
     <section id="services" className="relative z-10 mx-auto max-w-6xl overflow-hidden px-5 py-24 sm:px-8">
       <div data-speed="0.3" className="gs-parallax pointer-events-none absolute -left-40 top-24 h-96 w-96 rounded-full blur-[130px]" style={{ background: "rgba(251, 191, 36, 0.07)" }} />
@@ -131,6 +137,9 @@ export function ServicesSection() {
 /* ================= TESTIMONIALS ================= */
 
 export function TestimonialsSection() {
+  const { data } = usePortfolio();
+  const testimonials = data.testimonials?.length ? data.testimonials : fallbackTestimonials;
+  const testimonialNote = data.testimonialNote || fallbackNote;
   const [idx, setIdx] = useState(0);
   useEffect(() => {
     const t = setInterval(() => setIdx((i) => (i + 1) % testimonials.length), 4500);
@@ -228,11 +237,12 @@ export function TestimonialsSection() {
 /* ================= CONTACT FORM ================= */
 
 export function ContactForm() {
-  const [form, setForm] = useState({ name: "", email: "", message: "" });
+  const { data } = usePortfolio();
+  const profile = data.profile ?? fallbackProfile;
+  const [form, setForm] = useState({ name: "", email: "", company: "", message: "" });
   const [status, setStatus] = useState<"idle" | "sending" | "sent" | "error">("idle");
   const [error, setError] = useState("");
-  // Optional backend: set VITE_CONTACT_ENDPOINT to a Formspree/Web3Forms URL
-  // e.g. https://formspree.io/f/xxxx or https://api.web3forms.com/submit
+  // Optional legacy backend (Formspree/Web3Forms) — email-bot API ko priority milti hai
   const endpoint = (import.meta as unknown as { env?: Record<string, string> }).env?.VITE_CONTACT_ENDPOINT || "";
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -242,36 +252,44 @@ export function ContactForm() {
       return;
     }
     setError("");
-    // No backend configured → mailto fallback (zero-setup, always works)
-    if (!endpoint) {
-      const subject = encodeURIComponent(`Portfolio inquiry from ${form.name}`);
-      const body = encodeURIComponent(`Name: ${form.name}\nEmail: ${form.email}\n\n${form.message}`);
-      window.location.href = `mailto:${profile.email}?subject=${subject}&body=${body}`;
-      setStatus("sent");
-      setTimeout(() => setStatus("idle"), 4000);
-      return;
+    const payload = { name: form.name.trim(), email: form.email.trim(), company: form.company.trim(), message: form.message.trim() };
+    // 1) Email-bot API — the lead shows up in its inbox
+    if (isApiEnabled) {
+      setStatus("sending");
+      try {
+        await submitPortfolioLead(payload);
+        setStatus("sent");
+        setForm({ name: "", email: "", company: "", message: "" });
+        setTimeout(() => setStatus("idle"), 5000);
+        return;
+      } catch {
+        /* neeche fallback par jao */
+      }
     }
-    setStatus("sending");
-    try {
-      const res = await fetch(endpoint, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Accept: "application/json" },
-        body: JSON.stringify({ name: form.name.trim(), email: form.email.trim(), message: form.message.trim() }),
-      });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      setStatus("sent");
-      setForm({ name: "", email: "", message: "" });
-      setTimeout(() => setStatus("idle"), 5000);
-    } catch {
-      setStatus("error");
-      setError("Couldn't send just now — your email app will open instead.");
-      const subject = encodeURIComponent(`Portfolio inquiry from ${form.name}`);
-      const body = encodeURIComponent(`Name: ${form.name}\nEmail: ${form.email}\n\n${form.message}`);
-      window.setTimeout(() => {
-        window.location.href = `mailto:${profile.email}?subject=${subject}&body=${body}`;
-      }, 800);
-      setTimeout(() => setStatus("idle"), 5000);
+    // 2) Legacy endpoint (Formspree/Web3Forms)
+    if (endpoint) {
+      setStatus("sending");
+      try {
+        const res = await fetch(endpoint, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Accept: "application/json" },
+          body: JSON.stringify(payload),
+        });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        setStatus("sent");
+        setForm({ name: "", email: "", company: "", message: "" });
+        setTimeout(() => setStatus("idle"), 5000);
+        return;
+      } catch {
+        /* neeche mailto fallback */
+      }
     }
+    // 3) Mailto fallback (zero-setup, always works)
+    const subject = encodeURIComponent(`Portfolio inquiry from ${form.name}`);
+    const body = encodeURIComponent(`Name: ${form.name}\nEmail: ${form.email}\nCompany: ${form.company}\n\n${form.message}`);
+    window.location.href = `mailto:${profile.email}?subject=${subject}&body=${body}`;
+    setStatus("sent");
+    setTimeout(() => setStatus("idle"), 4000);
   };
 
   const inputStyle = {
@@ -300,6 +318,13 @@ export function ContactForm() {
         className="rounded-2xl px-4 py-3 text-sm text-slate-900 outline-none placeholder:text-slate-500 focus:border-teal-400/40 transition"
         style={inputStyle}
       />
+      <input
+        value={form.company}
+        onChange={(e) => setForm({ ...form, company: e.target.value })}
+        placeholder="Company (optional)"
+        className="rounded-2xl px-4 py-3 text-sm text-slate-900 outline-none placeholder:text-slate-500 focus:border-teal-400/40 transition sm:col-span-2"
+        style={inputStyle}
+      />
       <textarea
         value={form.message}
         onChange={(e) => setForm({ ...form, message: e.target.value })}
@@ -322,7 +347,7 @@ export function ContactForm() {
         {status === "sending"
           ? "Sending…"
           : status === "sent"
-            ? endpoint
+            ? isApiEnabled || endpoint
               ? "Message sent ✓ — reply within 24h"
               : "Opening your email app… ✓"
             : "Send Message"}
@@ -344,6 +369,8 @@ export function ContactForm() {
 /* ================= FLOATING ACTIONS ================= */
 
 export function FloatingActions({ showTop, hidden }: { showTop: boolean; hidden?: boolean }) {
+  const { data } = usePortfolio();
+  const profile = data.profile ?? fallbackProfile;
   const [copied, setCopied] = useState(false);
   const copyEmail = async () => {
     try {
@@ -614,7 +641,7 @@ const INTENTS: Intent[] = [
   },
 ];
 
-function resolveIntent(q: string): Intent {
+function resolveIntent(q: string, extraFaqs?: Array<{ keys: string[]; reply: string }>): Intent {
   const lower = q.toLowerCase();
   let best: Intent | null = null;
   let bestScore = 0;
@@ -629,10 +656,11 @@ function resolveIntent(q: string): Intent {
     }
   }
   if (best) return best;
-  // Fallback layer: legacy FAQ knowledge
+  // Fallback layer: dynamic CMS FAQs + legacy static FAQs
+  const faqPool = [...(extraFaqs ?? []), ...fallbackFaqs];
   let fbScore = 0;
   let fbReply: string | null = null;
-  for (const f of chatFaqs) {
+  for (const f of faqPool) {
     let s = 0;
     for (const k of f.keys) {
       if (keyHit(lower, k.toLowerCase())) s += 1;
@@ -668,6 +696,9 @@ export function ChatWidget({ open, onOpenChange }: { open: boolean; onOpenChange
   const [input, setInput] = useState("");
   const [phase, setPhase] = useState<"idle" | "thinking" | "answering">("idle");
   const [trace, setTrace] = useState<TraceStep[]>([]);
+  const [visitor, setVisitor] = useState({ name: "", company: "" });
+  const { data: pd } = usePortfolio();
+  const remoteFaqs = pd.chatFaqs?.length ? pd.chatFaqs : fallbackFaqs;
   const [msgs, setMsgs] = useState<AgentMsg[]>([
     {
       id: 0,
@@ -686,6 +717,19 @@ export function ChatWidget({ open, onOpenChange }: { open: boolean; onOpenChange
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [msgs, trace, phase, open]);
+
+  // Persist visitor name/company to the session when typed (debounced)
+  useEffect(() => {
+    if (!open || msgs.length <= 1) return;
+    if (!visitor.name.trim() && !visitor.company.trim()) return;
+    const t = window.setTimeout(() => {
+      saveChatSession(
+        msgs.map((x) => ({ from: x.from, text: x.text })),
+        { visitorName: visitor.name, company: visitor.company },
+      );
+    }, 2500);
+    return () => window.clearTimeout(t);
+  }, [visitor.name, visitor.company, open]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Clear all pending agent timers (used when a new run starts or on unmount).
   useEffect(() => {
@@ -788,7 +832,7 @@ export function ChatWidget({ open, onOpenChange }: { open: boolean; onOpenChange
     timersRef.current = [];
     const alive = () => runRef.current === run;
 
-    const intent = resolveIntent(q);
+    const intent = resolveIntent(q, remoteFaqs);
     // Deterministic "confidence" + timing so renders stay pure (no Math.random/Date).
     const conf = 87 + (q.length % 12);
     const streamSpeed = 60;
@@ -798,6 +842,11 @@ export function ChatWidget({ open, onOpenChange }: { open: boolean; onOpenChange
 
     setMsgs((m) => [...m, { id: idRef.current++, from: "user", text: q }]);
     setInput("");
+    // Save immediately on the user's message — doesn't wait for the bot reply
+    saveChatSession(
+      [...msgs.map((x) => ({ from: x.from, text: x.text })), { from: "user" as const, text: q }],
+      { visitorName: visitor.name, company: visitor.company },
+    );
     setPhase("thinking");
     setTrace([{ label: "Parsing intent…", done: false }]);
 
@@ -838,13 +887,19 @@ export function ChatWidget({ open, onOpenChange }: { open: boolean; onOpenChange
         setMsgs((m) => m.map((mm) => (mm.id === id ? { ...mm, text: sliced } : mm)));
         if (finished) {
           clearInterval(tick);
-          setMsgs((m) =>
-            m.map((mm) =>
+          setMsgs((m) => {
+            const next = m.map((mm) =>
               mm.id === id
                 ? { ...mm, actions: intent.actions, meta: `⚡ ${intent.sources} sources • ${estSecs}s` }
-                : mm
-            )
-          );
+                : mm,
+            );
+            // Session saved in email-bot — appears in the inbox with company/detail
+            saveChatSession(
+              next.map((x) => ({ from: x.from, text: x.text })),
+              { visitorName: visitor.name, company: visitor.company, detail: `intent:${intent.id}` },
+            );
+            return next;
+          });
           setSuggestions(intent.followups);
           setTrace([]);
           setPhase("idle");
@@ -890,7 +945,14 @@ export function ChatWidget({ open, onOpenChange }: { open: boolean; onOpenChange
       <motion.button
         data-chat-launcher
         onClick={() => {
-          if (!open) speakOnOpenRef.current();
+          if (!open) {
+            speakOnOpenRef.current();
+            // Create the session row immediately on open
+            saveChatSession(
+              msgs.map((x) => ({ from: x.from, text: x.text })),
+              { visitorName: visitor.name, company: visitor.company, detail: "opened" },
+            );
+          }
           onOpenChange(!open);
         }}
         whileHover={{ scale: 1.08 }}
@@ -1074,7 +1136,25 @@ export function ChatWidget({ open, onOpenChange }: { open: boolean; onOpenChange
                 </button>
               ))}
             </div>
-            <div className="flex gap-2 p-3">
+            <div className="flex gap-2 px-3 pt-2">
+              <input
+                value={visitor.name}
+                onChange={(e) => setVisitor({ ...visitor, name: e.target.value })}
+                placeholder="Your name (optional)"
+                aria-label="Your name"
+                className="flex-1 rounded-full px-3 py-1.5 text-xs text-slate-900 outline-none placeholder:text-slate-400"
+                style={{ border: "1px solid rgba(15, 23, 42, 0.08)", background: "#fff" }}
+              />
+              <input
+                value={visitor.company}
+                onChange={(e) => setVisitor({ ...visitor, company: e.target.value })}
+                placeholder="Company (optional)"
+                aria-label="Company"
+                className="flex-1 rounded-full px-3 py-1.5 text-xs text-slate-900 outline-none placeholder:text-slate-400"
+                style={{ border: "1px solid rgba(15, 23, 42, 0.08)", background: "#fff" }}
+              />
+            </div>
+            <div className="flex gap-2 p-3 pt-2">
               <input
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
