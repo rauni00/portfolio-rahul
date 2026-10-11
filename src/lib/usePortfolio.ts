@@ -1,10 +1,24 @@
 import { useEffect, useState } from "react";
-import { Bot, Briefcase, Cpu, Database, Globe, Mail, Cloud, Code2, type LucideIcon } from "lucide-react";
+import { Bot, Briefcase, Cloud, Code2, Cpu, Database, Fingerprint, Globe, HeartPulse, Mail, PenTool, Receipt, Rocket, Salad, Search, Settings, UtensilsCrossed, Zap, type LucideIcon } from "lucide-react";
 import { getPortfolioContent, logPortfolioVisit } from "./api";
 import * as fallback from "../data";
 import type { Experience, ProcessStep, Project, Service, SkillGroup, Testimonial } from "../data";
 
-const ICONS: Record<string, LucideIcon> = { Bot, Briefcase, Cpu, Database, Globe, Mail, Cloud, Code2 };
+const ICONS: Record<string, LucideIcon> = { Bot, Briefcase, Cloud, Code2, Cpu, Database, Fingerprint, Globe, HeartPulse, Mail, PenTool, Receipt, Rocket, Salad, Search, Settings, UtensilsCrossed, Zap };
+
+/* Legacy CMS compat: backend stores `emoji` strings ("🤖") while the UI
+   renders Lucide icons — map known emojis to their icon equivalents. */
+const EMOJI_ICONS: Record<string, LucideIcon> = {
+  "🤖": Bot, "🥗": Salad, "🏥": HeartPulse, "🔒": Fingerprint,
+  "🍱": UtensilsCrossed, "🧾": Receipt, "⚡": Zap, "☁️": Cloud,
+  "🔍": Search, "🎨": PenTool, "⚙️": Settings, "🚀": Rocket,
+};
+
+function resolveItemIcon(v: unknown, def: LucideIcon): LucideIcon {
+  if (!v) return def;
+  if (typeof v !== "string") return v as LucideIcon; // already a component
+  return ICONS[v] ?? EMOJI_ICONS[v] ?? def;
+}
 const iconOf = (name?: string, def: LucideIcon = Code2): LucideIcon =>
   (name && ICONS[name]) || def;
 
@@ -74,15 +88,24 @@ function normalize(remote: any): PortfolioData {
       ...e,
       period: fmtPeriod(e),
     })),
-    projects: remote.projects?.length ? remote.projects : fallback.projects,
+    projects: (remote.projects?.length ? remote.projects : fallback.projects).map((p: any) => ({
+      ...p,
+      icon: resolveItemIcon(p.icon ?? p.emoji, Bot),
+    })),
     education: remote.education?.length ? remote.education : fallback.education,
     achievements: (remote.achievements?.length ? remote.achievements : fallback.achievements).map((a: any) =>
       typeof a === "string" ? a : a.text ?? "",
     ).filter(Boolean),
-    services: remote.services?.length ? remote.services : fallback.services,
+    services: (remote.services?.length ? remote.services : fallback.services).map((s: any) => ({
+      ...s,
+      icon: resolveItemIcon(s.icon ?? s.emoji, Code2),
+    })),
     testimonials: remote.testimonials?.length ? remote.testimonials : fallback.testimonials,
     testimonialNote: p.testimonialNote || fallback.testimonialNote,
-    processSteps: remote.processSteps?.length ? remote.processSteps : fallback.processSteps,
+    processSteps: (remote.processSteps?.length ? remote.processSteps : fallback.processSteps).map((s: any) => ({
+      ...s,
+      icon: resolveItemIcon(s.icon ?? s.emoji, Code2),
+    })),
     chatFaqs: remote.chatFaqs?.length ? remote.chatFaqs : fallback.chatFaqs,
     // Header menu stays static (data.ts) — no need to manage it from the CMS
     navLinks: fallback.navLinks,

@@ -34,7 +34,7 @@ const TASKS: AgentTask[] = [
 const STAGES = ["Listen", "Think", "Act", "Done"] as const;
 
 /* ─── Neural Network SVG Animation ─── */
-function NeuralNetwork() {
+function NeuralNetwork({ dim = false }: { dim?: boolean }) {
   const nodes = [
     // Input layer
     { x: 20, y: 15, layer: 0 },
@@ -64,7 +64,7 @@ function NeuralNetwork() {
   }
 
   return (
-    <svg viewBox="0 0 100 90" className="absolute inset-0 h-full w-full opacity-20">
+    <svg viewBox="0 0 100 90" className={`absolute inset-0 h-full w-full ${dim ? "opacity-30" : "opacity-20"}`}>
       <defs>
         <linearGradient id="nn-grad" x1="0" y1="0" x2="1" y2="0">
           <stop offset="0" stopColor="#5eead4" />
@@ -155,7 +155,7 @@ function OrbitRing({ size, duration, color, delay = 0 }: { size: number; duratio
 }
 
 /* ─── Brain Core Animation ─── */
-function BrainCore() {
+function BrainCore({ light = false }: { light?: boolean }) {
   return (
     <div className="relative mx-auto" style={{ width: 140, height: 140 }}>
       {/* Outer glow pulse */}
@@ -175,7 +175,7 @@ function BrainCore() {
         boxShadow: "0 0 40px rgba(94, 234, 212, 0.15), inset 0 0 30px rgba(99, 102, 241, 0.1)",
       }}>
         <div className="grid h-full w-full place-items-center">
-          <Brain size={36} className="text-teal-300" style={{
+          <Brain size={36} className={light ? "text-teal-600" : "text-teal-300"} style={{
             filter: "drop-shadow(0 0 12px rgba(94, 234, 212, 0.5))",
           }} />
         </div>
@@ -185,28 +185,28 @@ function BrainCore() {
       <motion.div
         animate={{ y: [-4, 4, -4] }}
         transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
-        className="absolute -left-8 top-2 rounded-lg border border-teal-400/30 bg-[#0c0e18]/90 px-2 py-1"
+        className={`absolute -left-8 top-2 rounded-lg border border-teal-400/30 px-2 py-1 ${light ? "bg-white/95" : "bg-[#0c0e18]/90"}`}
         style={{ boxShadow: "0 0 15px rgba(94, 234, 212, 0.15)" }}
       >
-        <Cpu size={14} className="text-teal-300" />
+        <Cpu size={14} className={light ? "text-teal-600" : "text-teal-300"} />
       </motion.div>
       
       <motion.div
         animate={{ y: [3, -5, 3] }}
         transition={{ duration: 3.5, repeat: Infinity, ease: "easeInOut", delay: 0.5 }}
-        className="absolute -right-6 top-6 rounded-lg border border-indigo-400/30 bg-[#0c0e18]/90 px-2 py-1"
+        className={`absolute -right-6 top-6 rounded-lg border border-indigo-400/30 px-2 py-1 ${light ? "bg-white/95" : "bg-[#0c0e18]/90"}`}
         style={{ boxShadow: "0 0 15px rgba(99, 102, 241, 0.15)" }}
       >
-        <Network size={14} className="text-indigo-300" />
+        <Network size={14} className={light ? "text-indigo-600" : "text-indigo-300"} />
       </motion.div>
       
       <motion.div
         animate={{ y: [2, -6, 2] }}
         transition={{ duration: 4, repeat: Infinity, ease: "easeInOut", delay: 1 }}
-        className="absolute -bottom-2 left-1/2 -translate-x-1/2 rounded-lg border border-amber-400/30 bg-[#0c0e18]/90 px-2 py-1"
+        className={`absolute -bottom-2 left-1/2 -translate-x-1/2 rounded-lg border border-amber-400/30 px-2 py-1 ${light ? "bg-white/95" : "bg-[#0c0e18]/90"}`}
         style={{ boxShadow: "0 0 15px rgba(251, 191, 36, 0.15)" }}
       >
-        <Zap size={14} className="text-amber-300" />
+        <Zap size={14} className={light ? "text-amber-600" : "text-amber-300"} />
       </motion.div>
     </div>
   );
@@ -216,7 +216,8 @@ function BrainCore() {
    MAIN COMPONENT: AI AGENT HERO CONSOLE (Premium)
    ═══════════════════════════════════════════════════ */
 
-export default function AgentConsole() {
+export default function AgentConsole({ tone = "dark" }: { tone?: "dark" | "light" }) {
+  const L = tone === "light";
   const wrapRef = useRef<HTMLDivElement>(null);
   const [active, setActive] = useState(0);
   const [tokens, setTokens] = useState(128400);
@@ -278,10 +279,14 @@ export default function AgentConsole() {
           key={bubble}
           initial={{ opacity: 0, y: 10, scale: 0.9 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
-          className="rounded-2xl rounded-bl-sm border border-teal-400/30 px-4 py-2 text-xs font-bold text-teal-200"
+          className={`rounded-2xl rounded-bl-sm border border-teal-400/30 px-4 py-2 text-xs font-bold ${L ? "text-teal-700" : "text-teal-200"}`}
           style={{
-            background: "linear-gradient(135deg, rgba(8, 13, 26, 0.95), rgba(8, 13, 26, 0.85))",
-            boxShadow: "0 0 25px rgba(94, 234, 212, 0.15), 0 8px 32px rgba(0, 0, 0, 0.4)",
+            background: L
+              ? "linear-gradient(135deg, rgba(255,255,255,0.98), rgba(255,255,255,0.9))"
+              : "linear-gradient(135deg, rgba(8, 13, 26, 0.95), rgba(8, 13, 26, 0.85))",
+            boxShadow: L
+              ? "0 0 25px rgba(94, 234, 212, 0.25), 0 8px 32px rgba(15, 23, 42, 0.12)"
+              : "0 0 25px rgba(94, 234, 212, 0.15), 0 8px 32px rgba(0, 0, 0, 0.4)",
           }}
         >
           <span className="mr-1.5 inline-block h-1.5 w-1.5 animate-pulse rounded-full bg-teal-400" />
@@ -291,7 +296,7 @@ export default function AgentConsole() {
 
       {/* Background neural network */}
       <div className="pointer-events-none absolute inset-0 overflow-hidden rounded-3xl">
-        <NeuralNetwork />
+        <NeuralNetwork dim={L} />
       </div>
 
       {/* Ambient glow */}
@@ -308,9 +313,13 @@ export default function AgentConsole() {
         transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}
         className="relative overflow-hidden rounded-3xl p-5"
         style={{
-          background: "linear-gradient(180deg, rgba(8, 13, 26, 0.92), rgba(8, 13, 26, 0.85))",
-          border: "1px solid rgba(94, 234, 212, 0.12)",
-          boxShadow: "0 0 40px rgba(94, 234, 212, 0.06), 0 25px 80px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.04)",
+          background: L
+            ? "linear-gradient(180deg, rgba(255,255,255,0.98), rgba(255,255,255,0.9))"
+            : "linear-gradient(180deg, rgba(8, 13, 26, 0.92), rgba(8, 13, 26, 0.85))",
+          border: L ? "1px solid rgba(15, 23, 42, 0.10)" : "1px solid rgba(94, 234, 212, 0.12)",
+          boxShadow: L
+            ? "0 0 40px rgba(94, 234, 212, 0.12), 0 25px 80px rgba(15, 23, 42, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.9)"
+            : "0 0 40px rgba(94, 234, 212, 0.06), 0 25px 80px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.04)",
         }}
       >
         {/* Animated top border */}
@@ -326,31 +335,31 @@ export default function AgentConsole() {
         {/* Header */}
         <div className="flex items-center justify-between">
           <span
-            className="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[10px] font-black tracking-[0.15em] text-amber-300"
+            className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[10px] font-black tracking-[0.15em] ${L ? "text-emerald-700" : "text-emerald-300"}`}
             style={{
-              border: "1px solid rgba(251, 191, 36, 0.25)",
-              background: "rgba(251, 191, 36, 0.08)",
-              boxShadow: "0 0 15px rgba(251, 191, 36, 0.1)",
+              border: "1px solid rgba(16, 185, 129, 0.25)",
+              background: "rgba(16, 185, 129, 0.08)",
+              boxShadow: "0 0 15px rgba(16, 185, 129, 0.1)",
             }}
           >
             <span className="relative flex h-1.5 w-1.5">
-              <span className="absolute h-full w-full animate-ping rounded-full bg-amber-400 opacity-75" />
-              <span className="relative h-1.5 w-1.5 rounded-full bg-amber-400" />
+              <span className="absolute h-full w-full animate-ping rounded-full bg-emerald-500 opacity-75" />
+              <span className="relative h-1.5 w-1.5 rounded-full bg-emerald-500" />
             </span>
             AGENT LIVE
           </span>
-          <span className="font-mono text-[9px] text-slate-500">
+          <span className="font-mono text-[9px] text-slate-400">
             v2.0 • {tokens.toLocaleString()} tok
           </span>
         </div>
 
         {/* Brain visualization (compact) */}
         <div className="relative mx-auto my-4" style={{ height: 80 }}>
-          <BrainCore />
+          <BrainCore light={L} />
         </div>
 
         {/* Workflow stages */}
-        <div className="mb-3 flex items-center justify-between rounded-xl border border-white/5 bg-black/30 px-2 py-1.5">
+        <div className={`mb-3 flex items-center justify-between rounded-xl px-2 py-1.5 ${L ? "border border-slate-900/10 bg-slate-900/[0.04]" : "border border-white/5 bg-black/30"}`}>
           {STAGES.map((s, i) => {
             const isActive = i === stageIdx;
             const isPast = i < stageIdx;
@@ -363,10 +372,10 @@ export default function AgentConsole() {
                       ? "linear-gradient(135deg, #5eead4, #6366f1)"
                       : isPast
                         ? "rgba(94, 234, 212, 0.1)"
-                        : "rgba(255, 255, 255, 0.03)",
-                    border: `1px solid ${isActive ? "#5eead4" : isPast ? "rgba(94, 234, 212, 0.2)" : "rgba(255, 255, 255, 0.08)"}`,
+                        : L ? "rgba(15, 23, 42, 0.04)" : "rgba(255, 255, 255, 0.03)",
+                    border: `1px solid ${isActive ? "#5eead4" : isPast ? "rgba(94, 234, 212, 0.2)" : L ? "rgba(15, 23, 42, 0.12)" : "rgba(255, 255, 255, 0.08)"}`,
                     boxShadow: isActive ? "0 0 18px rgba(94, 234, 212, 0.3)" : "none",
-                    color: isActive ? "#070810" : isPast ? "#5eead4" : "#64748b",
+                    color: isActive ? "#070810" : isPast ? (L ? "#0d9488" : "#5eead4") : L ? "#94a3b8" : "#64748b",
                   }}
                 >
                   {isActive && (
@@ -377,7 +386,7 @@ export default function AgentConsole() {
                   )}
                   {isPast ? <Check size={11} /> : isActive ? <Loader2 size={11} className="animate-spin" /> : <CircleDot size={9} />}
                 </div>
-                <span className={`text-[8px] font-bold tracking-wider ${isActive ? "text-teal-300" : "text-slate-600"}`}>
+                <span className={`text-[8px] font-bold tracking-wider ${isActive ? (L ? "text-teal-700" : "text-teal-300") : "text-slate-400"}`}>
                   {s.toUpperCase()}
                 </span>
               </div>
@@ -395,24 +404,24 @@ export default function AgentConsole() {
                 key={t.label}
                 className="flex items-center gap-2 rounded-xl px-3 py-2 text-[11px] transition-all duration-300"
                 style={{
-                  border: `1px solid ${running ? "rgba(94, 234, 212, 0.3)" : "rgba(255, 255, 255, 0.05)"}`,
+                  border: `1px solid ${running ? "rgba(94, 234, 212, 0.3)" : L ? "rgba(15, 23, 42, 0.08)" : "rgba(255, 255, 255, 0.05)"}`,
                   background: running
                     ? "linear-gradient(135deg, rgba(94, 234, 212, 0.08), rgba(99, 102, 241, 0.04))"
                     : done
-                      ? "rgba(255, 255, 255, 0.01)"
-                      : "rgba(0, 0, 0, 0.2)",
+                      ? L ? "rgba(15, 23, 42, 0.02)" : "rgba(255, 255, 255, 0.01)"
+                      : L ? "rgba(15, 23, 42, 0.03)" : "rgba(0, 0, 0, 0.2)",
                   boxShadow: running ? "0 0 20px rgba(94, 234, 212, 0.08)" : "none",
-                  opacity: done ? 0.6 : running ? 1 : 0.4,
+                  opacity: done ? 0.65 : running ? 1 : 0.45,
                 }}
               >
                 {done ? (
-                  <Check size={13} className="shrink-0 text-amber-300" />
+                  <Check size={13} className={`shrink-0 ${L ? "text-emerald-600" : "text-emerald-300"}`} />
                 ) : running ? (
-                  <Loader2 size={13} className="shrink-0 animate-spin text-teal-300" />
+                  <Loader2 size={13} className={`shrink-0 animate-spin ${L ? "text-teal-600" : "text-teal-300"}`} />
                 ) : (
-                  <CircleDot size={11} className="shrink-0 text-slate-600" />
+                  <CircleDot size={11} className={`shrink-0 ${L ? "text-slate-400" : "text-slate-600"}`} />
                 )}
-                <span className={`flex-1 truncate font-medium ${running ? "text-white" : "text-slate-400"}`}>
+                <span className={`flex-1 truncate font-medium ${running ? (L ? "text-slate-900" : "text-white") : L ? "text-slate-400" : "text-slate-400"}`}>
                   {done ? t.done : t.label}
                 </span>
                 <span
@@ -431,15 +440,15 @@ export default function AgentConsole() {
         </div>
 
         {/* Footer stats */}
-        <div className="mt-3 flex items-center justify-between border-t border-white/5 pt-3 font-mono text-[9px] text-slate-500">
+        <div className={`mt-3 flex items-center justify-between border-t pt-3 font-mono text-[9px] ${L ? "border-slate-900/10 text-slate-400" : "border-white/5 text-slate-400"}`}>
           <span>
-            batches: <span className="font-bold text-white">{batches.toLocaleString()}</span>
+            batches: <span className={`font-bold ${L ? "text-slate-900" : "text-white"}`}>{batches.toLocaleString()}</span>
           </span>
           <span>
-            success: <span className="font-bold text-amber-300">99.2%</span>
+            success: <span className={`font-bold ${L ? "text-emerald-600" : "text-emerald-300"}`}>99.2%</span>
           </span>
           <span>
-            latency: <span className="font-bold text-teal-300">1.8s</span>
+            latency: <span className={`font-bold ${L ? "text-teal-600" : "text-teal-300"}`}>1.8s</span>
           </span>
         </div>
       </motion.div>
@@ -447,23 +456,23 @@ export default function AgentConsole() {
       {/* Bottom status */}
       <div className="mt-3 flex items-center justify-center gap-2 text-[11px] font-semibold">
         <span
-          className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-amber-300"
+          className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 ${L ? "text-emerald-700" : "text-emerald-300"}`}
           style={{
-            border: "1px solid rgba(251, 191, 36, 0.2)",
-            background: "rgba(251, 191, 36, 0.06)",
+            border: "1px solid rgba(16, 185, 129, 0.2)",
+            background: "rgba(16, 185, 129, 0.06)",
           }}
         >
           <span className="relative flex h-1.5 w-1.5">
-            <span className="absolute h-full w-full animate-ping rounded-full bg-amber-400 opacity-75" />
-            <span className="relative h-1.5 w-1.5 rounded-full bg-amber-400" />
+            <span className="absolute h-full w-full animate-ping rounded-full bg-emerald-500 opacity-75" />
+            <span className="relative h-1.5 w-1.5 rounded-full bg-emerald-500" />
           </span>
           AGENT ONLINE
         </span>
         <span
-          className="rounded-full px-3 py-1.5 text-slate-300"
+          className={`rounded-full px-3 py-1.5 ${L ? "text-slate-600" : "text-slate-300"}`}
           style={{
-            border: "1px solid rgba(255, 255, 255, 0.08)",
-            background: "rgba(255, 255, 255, 0.03)",
+            border: L ? "1px solid rgba(15, 23, 42, 0.10)" : "1px solid rgba(255, 255, 255, 0.08)",
+            background: L ? "#ffffff" : "rgba(255, 255, 255, 0.03)",
           }}
         >
           {speaking ? "🔊 speaking…" : "click me 🔊 • watch it work"}

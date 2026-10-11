@@ -107,8 +107,11 @@ export default function CustomCursor() {
     const onEnter = () => setVisible(true);
 
     const onClick = (e: MouseEvent) => {
-      // Click ripple (skip for reduced-motion users).
+      // Click ripple (skip for reduced-motion users + interactive elements —
+      // rippling on every button/input click feels noisy).
       if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+      const target = e.target as HTMLElement;
+      if (target.closest("a, button, input, textarea, select, [role='button']")) return;
       const ripple = document.createElement("div");
       ripple.className = "ripple";
       ripple.style.left = `${e.clientX - 40}px`;

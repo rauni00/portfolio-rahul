@@ -4,8 +4,8 @@
   "description": "MERN + NestJS + GenAI developer. AI chatbots, voice bots & SaaS apps.",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#f6f6f4",
-  "theme_color": "#f6f6f4",
+  "background_color": "#0B0F17",
+  "theme_color": "#0B0F17",
   "icons": [
     {
       "src": "/favicon.svg",

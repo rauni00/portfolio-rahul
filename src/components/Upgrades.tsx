@@ -4,6 +4,8 @@ import {
   ArrowUp,
   Bot,
   Check,
+  ChevronLeft,
+  ChevronRight,
   Copy,
   Loader2,
   MessageCircle,
@@ -35,7 +37,7 @@ export function Preloader() {
           exit={{ opacity: 0, scale: 1.05 }}
           transition={{ duration: 0.5 }}
           className="fixed inset-0 z-[100] grid place-items-center"
-          style={{ background: "#f6f6f4" }}
+          style={{ background: "#0B0F17" }}
         >
           <div className="text-center">
             <motion.div
@@ -48,8 +50,8 @@ export function Preloader() {
               }}
             >
               <div
-                className="grid h-full w-full place-items-center rounded-2xl font-display text-lg font-black text-slate-900"
-                style={{ background: "#f6f6f4" }}
+                className="grid h-full w-full place-items-center rounded-2xl font-display text-lg font-black text-white"
+                style={{ background: "#0B0F17" }}
               >
                 {profile.avatarInitials}
               </div>
@@ -57,13 +59,7 @@ export function Preloader() {
             <motion.p
               animate={{ opacity: [0.4, 1, 0.4] }}
               transition={{ duration: 1.2, repeat: Infinity }}
-              className="mt-4 font-display text-sm font-bold tracking-[0.3em]"
-              style={{
-                background: "linear-gradient(135deg, #0d9488, #4f46e5)",
-                WebkitBackgroundClip: "text",
-                WebkitTextFillColor: "transparent",
-                backgroundClip: "text",
-              }}
+              className="text-brand-gradient mt-4 font-display text-sm font-bold tracking-[0.3em]"
             >
               LOADING PORTFOLIO
             </motion.p>
@@ -84,19 +80,19 @@ export function ServicesSection() {
       <div data-speed="0.3" className="gs-parallax pointer-events-none absolute -left-40 top-24 h-96 w-96 rounded-full blur-[130px]" style={{ background: "rgba(251, 191, 36, 0.07)" }} />
       <div className="mx-auto mb-14 max-w-2xl text-center">
         <span
-          className="inline-flex items-center gap-2 rounded-full px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.2em] text-amber-600"
+          className="inline-flex items-center gap-2 rounded-full px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.2em] text-teal-300"
           style={{
-            border: "1px solid rgba(251, 191, 36, 0.2)",
-            background: "rgba(251, 191, 36, 0.06)",
-            boxShadow: "0 0 20px rgba(251, 191, 36, 0.1)",
+            border: "1px solid rgba(94, 234, 212, 0.25)",
+            background: "rgba(94, 234, 212, 0.07)",
+            boxShadow: "0 0 20px rgba(94, 234, 212, 0.12)",
           }}
         >
           <Sparkles size={13} /> What I do
         </span>
-        <h2 className="mt-5 font-display gradient-title text-3xl font-bold sm:text-5xl leading-[1.1]">
+        <h2 className="fluid-h2 mt-5 font-display gradient-title font-bold">
           Hire me for outcomes, not just code
         </h2>
-        <p className="mt-4 text-slate-500 leading-relaxed">
+        <p className="mt-4 text-slate-400 leading-relaxed">
           Whether you're a recruiter or a founder — these three services deliver the most value.
         </p>
       </div>
@@ -110,19 +106,25 @@ export function ServicesSection() {
             transition={{ delay: i * 0.1, duration: 0.6 }}
             className="neon-card group p-6"
           >
-            <span className="text-4xl">{s.emoji}</span>
-            <h3 className="mt-4 font-display text-lg font-bold text-slate-900">{s.title}</h3>
-            <p className="mt-2 text-sm leading-relaxed text-slate-500">{s.desc}</p>
+            {s.icon ? (
+              <span className="grid h-14 w-14 place-items-center rounded-2xl bg-gradient-to-br from-teal-400 to-indigo-600 text-white shadow-lg transition-transform group-hover:scale-110 group-hover:rotate-3">
+                <s.icon size={26} />
+              </span>
+            ) : s.emoji ? (
+              <span className="text-4xl">{s.emoji}</span>
+            ) : null}
+            <h3 className="mt-4 font-display text-lg font-bold text-white">{s.title}</h3>
+            <p className="mt-2 text-sm font-medium leading-relaxed text-slate-300">{s.desc}</p>
             <ul className="mt-4 space-y-1.5">
               {s.points.map((p) => (
-                <li key={p} className="flex items-center gap-2 text-xs font-semibold text-teal-700">
-                  <Check size={13} className="text-amber-600" /> {p}
+                <li key={p} className="flex items-center gap-2 text-xs font-semibold text-teal-300">
+                  <Check size={13} className="text-emerald-400" /> {p}
                 </li>
               ))}
             </ul>
             <a
               href="#contact"
-              className="mt-5 inline-flex items-center gap-1 text-xs font-bold text-slate-900 transition hover:text-teal-600"
+              className="mt-5 inline-flex items-center gap-1 text-xs font-bold text-white transition hover:text-teal-300"
               data-cursor-hover
             >
               Discuss this →
@@ -141,17 +143,20 @@ export function TestimonialsSection() {
   const testimonials = data.testimonials?.length ? data.testimonials : fallbackTestimonials;
   const testimonialNote = data.testimonialNote || fallbackNote;
   const [idx, setIdx] = useState(0);
+  const [paused, setPaused] = useState(false);
   useEffect(() => {
+    if (paused) return;
     const t = setInterval(() => setIdx((i) => (i + 1) % testimonials.length), 4500);
     return () => clearInterval(t);
-  }, []);
+  }, [paused, testimonials.length]);
+  const go = (d: number) => setIdx((i) => (i + d + testimonials.length) % testimonials.length);
   const cur = testimonials[idx];
   return (
     <section id="testimonials" className="relative z-10 mx-auto max-w-6xl overflow-hidden px-5 py-24 sm:px-8">
       <div data-speed="0.35" className="gs-parallax pointer-events-none absolute -right-40 top-32 h-96 w-96 rounded-full blur-[130px]" style={{ background: "rgba(45, 212, 191, 0.08)" }} />
       <div className="mx-auto mb-12 max-w-2xl text-center">
         <span
-          className="inline-flex items-center gap-2 rounded-full px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.2em] text-amber-600"
+          className="inline-flex items-center gap-2 rounded-full px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.2em] text-amber-400"
           style={{
             border: "1px solid rgba(251, 191, 36, 0.2)",
             background: "rgba(251, 191, 36, 0.06)",
@@ -160,17 +165,19 @@ export function TestimonialsSection() {
         >
           <Quote size={13} /> Social proof
         </span>
-        <h2 className="mt-5 font-display gradient-title text-3xl font-bold sm:text-5xl leading-[1.1]">
+        <h2 className="fluid-h2 mt-5 font-display gradient-title font-bold">
           People I've worked with
         </h2>
       </div>
       <div
         className="relative mx-auto max-w-3xl overflow-hidden rounded-3xl p-8 text-center sm:p-10"
+        onMouseEnter={() => setPaused(true)}
+        onMouseLeave={() => setPaused(false)}
         style={{
-          border: "1px solid rgba(94, 234, 212, 0.1)",
-          background: "linear-gradient(180deg, rgba(255, 255, 255, 0.95), rgba(255, 255, 255, 0.8))",
-          backdropFilter: "blur(12px)",
-          boxShadow: "0 0 40px rgba(94, 234, 212, 0.08), 0 20px 60px rgba(15, 23, 42, 0.10)",
+          border: "1px solid rgba(255, 255, 255, 0.08)",
+          background: "linear-gradient(180deg, rgba(21, 27, 44, 0.88), rgba(11, 15, 23, 0.9))",
+          backdropFilter: "blur(16px)",
+          boxShadow: "0 0 40px rgba(99, 102, 241, 0.10), 0 20px 60px rgba(0, 0, 0, 0.45)",
         }}
       >
         {/* Holographic top border */}
@@ -193,7 +200,7 @@ export function TestimonialsSection() {
                 <Star key={s} size={14} className="text-amber-500" fill="currentColor" />
               ))}
             </div>
-            <p className="mt-4 text-lg leading-relaxed text-slate-700">"{cur.quote}"</p>
+            <p className="mt-4 text-lg leading-relaxed text-slate-300">"{cur.quote}"</p>
             <div className="mt-6 flex items-center justify-center gap-3">
               <span
                 className="grid h-11 w-11 place-items-center rounded-full font-display text-xs font-black text-white"
@@ -205,8 +212,8 @@ export function TestimonialsSection() {
                 {cur.initials}
               </span>
               <span className="text-left">
-                <span className="block text-sm font-bold text-slate-900">{cur.name}</span>
-                <span className="block text-xs text-teal-600">{cur.role}</span>
+                <span className="block text-sm font-bold text-white">{cur.name}</span>
+                <span className="block text-xs text-teal-300">{cur.role}</span>
               </span>
             </div>
           </motion.div>
@@ -214,7 +221,14 @@ export function TestimonialsSection() {
         <p className="mx-auto mt-6 max-w-md text-[11px] leading-relaxed text-slate-400">
           {testimonialNote}
         </p>
-        <div className="mt-4 flex justify-center gap-2">
+        <div className="mt-4 flex items-center justify-center gap-3">
+          <button
+            onClick={() => go(-1)}
+            aria-label="Previous review"
+            className="grid h-8 w-8 place-items-center rounded-full border border-white/10 bg-white/5 text-slate-300 transition hover:border-teal-400/40 hover:text-teal-300"
+          >
+            <ChevronLeft size={16} />
+          </button>
           {testimonials.map((_, i) => (
             <button
               key={i}
@@ -223,11 +237,18 @@ export function TestimonialsSection() {
               className="h-2 rounded-full transition-all"
               style={{
                 width: i === idx ? 32 : 8,
-                background: i === idx ? "#5eead4" : "rgba(15, 23, 42, 0.15)",
+                background: i === idx ? "#5eead4" : "rgba(255, 255, 255, 0.14)",
                 boxShadow: i === idx ? "0 0 10px rgba(94, 234, 212, 0.4)" : "none",
               }}
             />
           ))}
+          <button
+            onClick={() => go(1)}
+            aria-label="Next review"
+            className="grid h-8 w-8 place-items-center rounded-full border border-white/10 bg-white/5 text-slate-300 transition hover:border-teal-400/40 hover:text-teal-300"
+          >
+            <ChevronRight size={16} />
+          </button>
         </div>
       </div>
     </section>
@@ -242,13 +263,27 @@ export function ContactForm() {
   const [form, setForm] = useState({ name: "", email: "", company: "", message: "" });
   const [status, setStatus] = useState<"idle" | "sending" | "sent" | "error">("idle");
   const [error, setError] = useState("");
+  const [invalid, setInvalid] = useState({ name: false, email: false, message: false });
   // Optional legacy backend (Formspree/Web3Forms) — email-bot API ko priority milti hai
   const endpoint = (import.meta as unknown as { env?: Record<string, string> }).env?.VITE_CONTACT_ENDPOINT || "";
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form.name.trim() || !form.email.trim() || !form.message.trim()) return;
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())) {
-      setError("Please enter a valid email address.");
+    // Field-level validation — every failure throws a visible error
+    const bad = {
+      name: !form.name.trim(),
+      email: !form.email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim()),
+      message: !form.message.trim(),
+    };
+    setInvalid(bad);
+    if (bad.name || bad.email || bad.message) {
+      const missing = [
+        bad.name && "name",
+        bad.email && (form.email.trim() ? "a valid email" : "email"),
+        bad.message && "message",
+      ].filter(Boolean);
+      setError(`Please add your ${missing.join(", ")} before sending.`);
+      setStatus("error");
+      setTimeout(() => setStatus((s) => (s === "error" ? "idle" : s)), 5000);
       return;
     }
     setError("");
@@ -300,8 +335,8 @@ export function ContactForm() {
   };
 
   const inputStyle = {
-    border: "1px solid rgba(15, 23, 42, 0.08)",
-    background: "#ffffff",
+    border: "1px solid rgba(255, 255, 255, 0.10)",
+    background: "rgba(255, 255, 255, 0.04)",
     backdropFilter: "blur(8px)",
   };
 
@@ -310,44 +345,54 @@ export function ContactForm() {
       onSubmit={submit}
       className="mx-auto mt-8 grid max-w-2xl gap-3 text-left sm:grid-cols-2"
     >
+      <label htmlFor="cf-name" className="sr-only">Your name</label>
       <input
+        id="cf-name"
         value={form.name}
-        onChange={(e) => setForm({ ...form, name: e.target.value })}
+        onChange={(e) => { setForm({ ...form, name: e.target.value }); setInvalid((v) => ({ ...v, name: false })); }}
         placeholder="Your name *"
-        className="rounded-2xl px-4 py-3 text-sm text-slate-900 outline-none placeholder:text-slate-500 focus:border-teal-400/40 transition"
-        style={inputStyle}
+        autoComplete="name"
+        aria-invalid={invalid.name}
+        className="rounded-2xl px-4 py-3 text-sm text-white outline-none placeholder:text-slate-400 focus:border-teal-400/40 transition"
+        style={{ ...inputStyle, border: invalid.name ? "1px solid rgba(251, 113, 133, 0.6)" : inputStyle.border }}
       />
+      <label htmlFor="cf-email" className="sr-only">Your email</label>
       <input
+        id="cf-email"
         value={form.email}
-        onChange={(e) => setForm({ ...form, email: e.target.value })}
+        onChange={(e) => { setForm({ ...form, email: e.target.value }); setInvalid((v) => ({ ...v, email: false })); }}
         placeholder="Your email *"
         type="email"
-        className="rounded-2xl px-4 py-3 text-sm text-slate-900 outline-none placeholder:text-slate-500 focus:border-teal-400/40 transition"
-        style={inputStyle}
+        autoComplete="email"
+        aria-invalid={invalid.email}
+        className="rounded-2xl px-4 py-3 text-sm text-white outline-none placeholder:text-slate-400 focus:border-teal-400/40 transition"
+        style={{ ...inputStyle, border: invalid.email ? "1px solid rgba(251, 113, 133, 0.6)" : inputStyle.border }}
       />
+      <label htmlFor="cf-company" className="sr-only">Company (optional)</label>
       <input
+        id="cf-company"
         value={form.company}
         onChange={(e) => setForm({ ...form, company: e.target.value })}
         placeholder="Company (optional)"
-        className="rounded-2xl px-4 py-3 text-sm text-slate-900 outline-none placeholder:text-slate-500 focus:border-teal-400/40 transition sm:col-span-2"
+        autoComplete="organization"
+        className="rounded-2xl px-4 py-3 text-sm text-white outline-none placeholder:text-slate-400 focus:border-teal-400/40 transition sm:col-span-2"
         style={inputStyle}
       />
+      <label htmlFor="cf-message" className="sr-only">Project details or message</label>
       <textarea
+        id="cf-message"
         value={form.message}
-        onChange={(e) => setForm({ ...form, message: e.target.value })}
+        onChange={(e) => { setForm({ ...form, message: e.target.value }); setInvalid((v) => ({ ...v, message: false })); }}
         placeholder="Project details / role / message *"
         rows={4}
-        className="rounded-2xl px-4 py-3 text-sm text-slate-900 outline-none placeholder:text-slate-500 focus:border-teal-400/40 transition sm:col-span-2"
-        style={inputStyle}
+        aria-invalid={invalid.message}
+        className="rounded-2xl px-4 py-3 text-sm text-white outline-none placeholder:text-slate-400 focus:border-teal-400/40 transition sm:col-span-2"
+        style={{ ...inputStyle, border: invalid.message ? "1px solid rgba(251, 113, 133, 0.6)" : inputStyle.border }}
       />
       <button
         type="submit"
         disabled={status === "sending"}
-        className="inline-flex items-center justify-center gap-2 rounded-full px-8 py-3.5 text-sm font-bold text-white transition hover:scale-[1.02] disabled:opacity-60 sm:col-span-2"
-        style={{
-          background: "linear-gradient(135deg, #4f46e5, #7c3aed)",
-          boxShadow: "0 0 25px rgba(79, 70, 229, 0.35)",
-        }}
+        className="btn-primary inline-flex items-center justify-center gap-2 rounded-full px-8 py-3.5 text-sm font-bold transition hover:scale-[1.02] disabled:opacity-60 sm:col-span-2"
         data-cursor-hover
       >
         {status === "sending" ? <Loader2 size={15} className="animate-spin" /> : <Send size={15} />}
@@ -365,7 +410,7 @@ export function ContactForm() {
         </p>
       )}
       {status === "sent" && !error && (
-        <p className="text-center text-xs text-amber-600 sm:col-span-2">
+        <p className="text-center text-xs text-emerald-400 sm:col-span-2">
           Thanks! Expect a reply within 24 hours.
         </p>
       )}
@@ -389,7 +434,8 @@ export function FloatingActions({ showTop, hidden }: { showTop: boolean; hidden?
     }
   };
   return (
-    /* ── Unified action dock: evenly spaced, never overlapping ── */
+    /* ── Unified action dock: copy + WhatsApp + top. Hides while chatting
+       (the chat panel has its own close control). ── */
     <AnimatePresence>
       {!hidden && (
     <motion.div
@@ -398,19 +444,19 @@ export function FloatingActions({ showTop, hidden }: { showTop: boolean; hidden?
       animate={{ opacity: 1, y: 0, scale: 1 }}
       exit={{ opacity: 0, y: 20, scale: 0.9 }}
       transition={{ type: "spring", stiffness: 260, damping: 22 }}
-      className="fixed bottom-5 right-5 z-50 flex flex-col items-center gap-1.5 rounded-2xl border border-slate-900/10 bg-white/90 p-1.5 shadow-[0_12px_40px_rgba(15,23,42,0.15)] backdrop-blur-md"
+      className="fixed bottom-6 right-6 z-50 flex flex-col items-center gap-2 rounded-2xl border border-[#232D3F] bg-[#161B26]/90 p-1.5 shadow-[0_12px_40px_rgba(0,0,0,0.5)] backdrop-blur-md"
     >
       {/* Copy email */}
       <button
         onClick={copyEmail}
         aria-label="Copy email"
         title={copied ? "Copied!" : "Copy email"}
-        className="grid h-10 w-10 place-items-center rounded-xl transition hover:scale-105 hover:bg-slate-900/[0.05]"
-        style={{ color: copied ? "#b45309" : "#0d9488" }}
+        className="grid h-10 w-10 place-items-center rounded-xl transition hover:scale-105 hover:bg-white/10"
+        style={{ color: copied ? "#34d399" : "#e2e8f0" }}
       >
         {copied ? <Check size={18} /> : <Copy size={17} />}
       </button>
-      <span className="h-px w-6 bg-slate-900/10" />
+      <span className="h-px w-6 bg-white/10" />
       {/* WhatsApp */}
       <motion.a
         whileHover={{ scale: 1.08 }}
@@ -422,8 +468,8 @@ export function FloatingActions({ showTop, hidden }: { showTop: boolean; hidden?
         rel="noreferrer"
         aria-label="Chat on WhatsApp"
         title="Chat on WhatsApp"
-        className="grid h-10 w-10 place-items-center rounded-xl text-white"
-        style={{ background: "#25D366" }}
+        className="grid h-10 w-10 place-items-center rounded-xl text-white transition hover:bg-white/10"
+        style={{ background: "rgba(255, 255, 255, 0.08)", border: "1px solid rgba(255, 255, 255, 0.12)" }}
       >
         <MessageCircle size={18} />
       </motion.a>
@@ -437,13 +483,13 @@ export function FloatingActions({ showTop, hidden }: { showTop: boolean; hidden?
             exit={{ opacity: 0, scale: 0.5 }}
             className="flex flex-col items-center gap-1.5"
           >
-            <span className="h-px w-6 bg-slate-900/10" />
+            <span className="h-px w-6 bg-white/10" />
             <motion.button
               whileHover={{ scale: 1.08 }}
               whileTap={{ scale: 0.94 }}
               onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
-              className="grid h-10 w-10 place-items-center rounded-xl text-white"
-              style={{ background: "linear-gradient(135deg, #4f46e5, #7c3aed)" }}
+              className="grid h-10 w-10 place-items-center rounded-xl text-white transition hover:bg-white/10"
+              style={{ background: "rgba(255, 255, 255, 0.08)", border: "1px solid rgba(255, 255, 255, 0.12)" }}
               aria-label="Back to top"
               title="Back to top"
             >
@@ -946,29 +992,30 @@ export function ChatWidget({ open, onOpenChange }: { open: boolean; onOpenChange
     }
   };
 
+  const launch = () => {
+    if (!open) {
+      speakOnOpenRef.current();
+      // Create the session row immediately on open
+      saveChatSession(
+        msgs.map((x) => ({ from: x.from, text: x.text })),
+        { visitorName: visitor.name, company: visitor.company, detail: "opened" },
+      );
+    }
+    onOpenChange(!open);
+  };
+
   return (
     <>
-      {/* launcher */}
+      {/* launcher — bottom-left pill */}
       <motion.button
         data-chat-launcher
-        onClick={() => {
-          if (!open) {
-            speakOnOpenRef.current();
-            // Create the session row immediately on open
-            saveChatSession(
-              msgs.map((x) => ({ from: x.from, text: x.text })),
-              { visitorName: visitor.name, company: visitor.company, detail: "opened" },
-            );
-          }
-          onOpenChange(!open);
-        }}
+        onClick={launch}
         whileHover={{ scale: 1.08 }}
         whileTap={{ scale: 0.94 }}
         aria-label="Open AI agent"
-        className="fixed bottom-6 left-6 z-50 flex items-center gap-2 rounded-full px-5 py-3 text-sm font-bold text-white"
+        className="btn-primary fixed bottom-6 left-6 z-50 flex items-center gap-2 rounded-full px-5 py-3 text-sm font-bold"
         style={{
-          background: "linear-gradient(135deg, #4f46e5, #7c3aed)",
-          boxShadow: "0 0 30px rgba(79, 70, 229, 0.35), 0 8px 32px rgba(15, 23, 42, 0.2)",
+          boxShadow: "0 0 30px rgba(79, 70, 229, 0.35), 0 8px 32px rgba(0, 0, 0, 0.5)",
         }}
       >
         {open ? <X size={17} /> : <Bot size={17} />}
@@ -991,10 +1038,10 @@ export function ChatWidget({ open, onOpenChange }: { open: boolean; onOpenChange
             exit={{ opacity: 0, y: 24, scale: 0.96 }}
             className="fixed bottom-20 left-4 z-50 flex h-[420px] w-[calc(100vw-2rem)] max-w-sm flex-col overflow-hidden rounded-3xl shadow-2xl sm:left-6"
             style={{
-              border: "1px solid rgba(94, 234, 212, 0.12)",
-              background: "rgba(255, 255, 255, 0.97)",
+              border: "1px solid rgba(255, 255, 255, 0.08)",
+              background: "rgba(13, 18, 32, 0.97)",
               backdropFilter: "blur(20px)",
-              boxShadow: "0 0 40px rgba(94, 234, 212, 0.10), 0 25px 80px rgba(15, 23, 42, 0.18)",
+              boxShadow: "0 0 40px rgba(99, 102, 241, 0.12), 0 25px 80px rgba(0, 0, 0, 0.5)",
             }}
           >
             {/* Top border */}
@@ -1014,11 +1061,11 @@ export function ChatWidget({ open, onOpenChange }: { open: boolean; onOpenChange
                 <Bot size={18} />
               </span>
               <div>
-                <p className="text-sm font-bold text-slate-900">Rahul's AI Agent</p>
-                <p className="flex items-center gap-1 text-[11px] text-amber-600">
+                <p className="text-sm font-bold text-white">Rahul's AI Agent</p>
+                <p className="flex items-center gap-1 text-[11px] text-emerald-400">
                   <span className="relative flex h-1.5 w-1.5">
-                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-amber-400 opacity-75" />
-                    <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-amber-400" />
+                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-500 opacity-75" />
+                    <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-500" />
                   </span>
                   {phase === "idle" ? "Agentic • thinks before replying" : "Agent working…"}
                 </p>
@@ -1031,7 +1078,7 @@ export function ChatWidget({ open, onOpenChange }: { open: boolean; onOpenChange
                     className={`max-w-[85%] rounded-2xl px-3.5 py-2.5 text-[13px] leading-relaxed ${
                       m.from === "user"
                         ? "rounded-br-md text-white"
-                        : "rounded-bl-md text-slate-700"
+                        : "rounded-bl-md text-slate-300"
                     }`}
                     style={
                       m.from === "user"
@@ -1039,8 +1086,8 @@ export function ChatWidget({ open, onOpenChange }: { open: boolean; onOpenChange
                             background: "linear-gradient(135deg, #4f46e5, #7c3aed)",
                           }
                         : {
-                            border: "1px solid rgba(15, 23, 42, 0.06)",
-                            background: "rgba(15, 23, 42, 0.03)",
+                            border: "1px solid rgba(255, 255, 255, 0.08)",
+                            background: "rgba(255, 255, 255, 0.04)",
                           }
                     }
                   >
@@ -1099,7 +1146,7 @@ export function ChatWidget({ open, onOpenChange }: { open: boolean; onOpenChange
               {phase === "thinking" && trace.length > 0 && (
                 <div className="flex justify-start">
                   <div
-                    className="w-[85%] rounded-2xl rounded-bl-md px-3.5 py-2.5 font-mono text-[11px] leading-relaxed text-slate-600"
+                    className="w-[85%] rounded-2xl rounded-bl-md px-3.5 py-2.5 font-mono text-[11px] leading-relaxed text-slate-400"
                     style={{
                       border: "1px dashed rgba(79, 70, 229, 0.3)",
                       background: "rgba(79, 70, 229, 0.04)",
@@ -1108,7 +1155,7 @@ export function ChatWidget({ open, onOpenChange }: { open: boolean; onOpenChange
                     {trace.map((s, i) => (
                       <div key={i} className="flex items-center gap-2 py-0.5">
                         {s.done ? (
-                          <Check size={12} className="shrink-0 text-teal-600" />
+                          <Check size={12} className="shrink-0 text-teal-300" />
                         ) : (
                           <Loader2 size={12} className="shrink-0 animate-spin text-indigo-500" />
                         )}
@@ -1120,12 +1167,12 @@ export function ChatWidget({ open, onOpenChange }: { open: boolean; onOpenChange
               )}
               <div ref={bottomRef} />
             </div>
-            <div className="flex flex-wrap gap-1.5 border-t border-slate-900/10 px-3 pt-2">
+            <div className="flex flex-wrap gap-1.5 border-t border-white/10 px-3 pt-2">
               {suggestions.map((q) => (
                 <button
                   key={q}
                   onClick={() => send(q)}
-                  className="rounded-full px-3 py-1 text-[11px] font-semibold text-teal-700 transition"
+                  className="rounded-full px-3 py-1 text-[11px] font-semibold text-teal-300 transition"
                   style={{
                     border: "1px solid rgba(94, 234, 212, 0.2)",
                     background: "rgba(94, 234, 212, 0.06)",
@@ -1149,16 +1196,16 @@ export function ChatWidget({ open, onOpenChange }: { open: boolean; onOpenChange
                 onChange={(e) => setVisitor({ ...visitor, name: e.target.value })}
                 placeholder="Your name (optional)"
                 aria-label="Your name"
-                className="flex-1 rounded-full px-3 py-1.5 text-xs text-slate-900 outline-none placeholder:text-slate-400"
-                style={{ border: "1px solid rgba(15, 23, 42, 0.08)", background: "#fff" }}
+                className="flex-1 rounded-full px-3 py-1.5 text-xs text-white outline-none placeholder:text-slate-400"
+                style={{ border: "1px solid rgba(255, 255, 255, 0.10)", background: "rgba(255, 255, 255, 0.05)" }}
               />
               <input
                 value={visitor.company}
                 onChange={(e) => setVisitor({ ...visitor, company: e.target.value })}
                 placeholder="Company (optional)"
                 aria-label="Company"
-                className="flex-1 rounded-full px-3 py-1.5 text-xs text-slate-900 outline-none placeholder:text-slate-400"
-                style={{ border: "1px solid rgba(15, 23, 42, 0.08)", background: "#fff" }}
+                className="flex-1 rounded-full px-3 py-1.5 text-xs text-white outline-none placeholder:text-slate-400"
+                style={{ border: "1px solid rgba(255, 255, 255, 0.10)", background: "rgba(255, 255, 255, 0.05)" }}
               />
             </div>
             <div className="flex gap-2 p-3 pt-2">
@@ -1167,10 +1214,10 @@ export function ChatWidget({ open, onOpenChange }: { open: boolean; onOpenChange
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && send()}
                 placeholder="Type your question…"
-                className="flex-1 rounded-full px-4 py-2.5 text-sm text-slate-900 outline-none placeholder:text-slate-500 focus:border-teal-400/30 transition"
+                className="flex-1 rounded-full px-4 py-2.5 text-sm text-white outline-none placeholder:text-slate-400 focus:border-teal-400/30 transition"
                 style={{
-                  border: "1px solid rgba(15, 23, 42, 0.08)",
-                  background: "#ffffff",
+                  border: "1px solid rgba(255, 255, 255, 0.10)",
+                  background: "rgba(255, 255, 255, 0.04)",
                 }}
               />
               <button

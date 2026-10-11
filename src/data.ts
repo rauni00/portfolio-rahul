@@ -3,10 +3,20 @@ import {
   Briefcase,
   Cpu,
   Database,
+  Fingerprint,
   Globe,
+  HeartPulse,
   Mail,
   Cloud,
   Code2,
+  PenTool,
+  Receipt,
+  Rocket,
+  Salad,
+  Search,
+  Settings,
+  UtensilsCrossed,
+  Zap,
   type LucideIcon,
 } from "lucide-react";
 
@@ -77,25 +87,25 @@ export const skillGroups: SkillGroup[] = [
   {
     title: "AI & GenAI",
     icon: Bot,
-    color: "#fbbf24",
+    color: "#8b5cf6",
     skills: ["OpenAI GPT-4 / GPT-4o", "Embeddings API", "LLM Integration", "Prompt Engineering", "Vector Embeddings", "AI Chatbots", "Email Bot", "Voice Bot"],
   },
   {
     title: "Databases",
     icon: Database,
-    color: "#f0abfc",
+    color: "#38bdf8",
     skills: ["MongoDB", "MySQL", "Redis"],
   },
   {
     title: "Cloud & DevOps",
     icon: Cloud,
-    color: "#fdba74",
+    color: "#6366f1",
     skills: ["AWS Lambda", "EC2", "S3", "Serverless", "Docker", "Jenkins", "Azure", "CI/CD"],
   },
   {
     title: "Other Tech",
     icon: Cpu,
-    color: "#34d399",
+    color: "#14b8a6",
     skills: ["TypeScript", "JavaScript ES6", "Electron.js", "Twilio", "Payment Gateway", "Skyflow Vault", "Git", "Jira", "Postman"],
   },
 ];
@@ -160,7 +170,8 @@ export interface Project {
   tech: string[];
   links: { label: string; href: string }[];
   gradient: string;
-  emoji: string;
+  icon: LucideIcon;
+  emoji?: string; // legacy CMS compat — icon takes precedence
   featured?: boolean;
   impact?: string; // one-line measurable outcome shown on the card
 }
@@ -177,7 +188,7 @@ export const projects: Project[] = [
       { label: "Website", href: "https://ultimabot.ai" },
     ],
     gradient: "from-teal-400 via-sky-500 to-indigo-600",
-    emoji: "🤖",
+    icon: Bot,
     featured: true,
     impact: "+40% lead qualification • -30% response time (Redis + GPT-4o)",
   },
@@ -188,8 +199,8 @@ export const projects: Project[] = [
       "Diet tracking app with personalized plans, real-time analytics & visualization. Personalized diet plans, daily meal + nutrition tracking, intuitive food logging & progress charts.",
     tech: ["React", "Node", "Express", "MongoDB"],
     links: [{ label: "Live App", href: "https://app.askwelfore.com" }],
-    gradient: "from-amber-300 via-emerald-400 to-teal-600",
-    emoji: "🥗",
+    gradient: "from-emerald-400 via-teal-500 to-sky-600",
+    icon: Salad,
     featured: true,
     impact: "5K+ users • realtime analytics + personalised plans",
   },
@@ -200,8 +211,8 @@ export const projects: Project[] = [
       "Cross-platform desktop app connecting kidney transplant candidates with donors. Skyflow Privacy Vault for patient data security & HIPAA compliance. Streamlined transplant workflows.",
     tech: ["React", "Electron.js", "Node.js", "MongoDB", "Skyflow Vault"],
     links: [],
-    gradient: "from-amber-400 via-orange-500 to-orange-600",
-    emoji: "🏥",
+    gradient: "from-sky-400 via-indigo-500 to-violet-600",
+    icon: HeartPulse,
     impact: "HIPAA-compliant • Skyflow Vault patient-data security",
   },
   {
@@ -211,8 +222,8 @@ export const projects: Project[] = [
       "Smart firearm lock using Bluetooth & facial recognition. Built admin panel & integrated complex API services.",
     tech: ["Angular", "Node", "Express", "MongoDB"],
     links: [],
-    gradient: "from-amber-300 via-orange-500 to-red-600",
-    emoji: "🔒",
+    gradient: "from-indigo-400 via-violet-500 to-indigo-700",
+    icon: Fingerprint,
     impact: "Bluetooth + facial recognition • admin panel + APIs",
   },
   {
@@ -222,8 +233,8 @@ export const projects: Project[] = [
       "User-friendly online food ordering system improving customer experience & operations. Base architecture + GitHub management.",
     tech: ["React", "Redux", "Express", "MongoDB"],
     links: [],
-    gradient: "from-yellow-300 via-amber-400 to-orange-600",
-    emoji: "🍱",
+    gradient: "from-teal-400 via-cyan-500 to-sky-600",
+    icon: UtensilsCrossed,
     impact: "End-to-end ordering ops • base architecture + GitHub",
   },
   {
@@ -234,7 +245,7 @@ export const projects: Project[] = [
     tech: ["React", "Redux", "Express", "MongoDB"],
     links: [{ label: "Live Demo", href: "https://pdf-invoice-editor.netlify.app" }],
     gradient: "from-indigo-400 via-indigo-500 to-indigo-700",
-    emoji: "🧾",
+    icon: Receipt,
     impact: "One-click generation • drag-and-drop templates",
   },
 ];
@@ -264,7 +275,8 @@ export const navLinks = [
 /* ---------- Services (What I do — recruiter/client attraction) ---------- */
 
 export interface Service {
-  emoji: string;
+  icon: LucideIcon;
+  emoji?: string; // legacy CMS compat — icon takes precedence
   title: string;
   desc: string;
   points: string[];
@@ -272,19 +284,19 @@ export interface Service {
 
 export const services: Service[] = [
   {
-    emoji: "🤖",
+    icon: Bot,
     title: "AI Chatbot & Voice Bot Development",
     desc: "Bots that learn from your website data, FAQs and PDFs — qualifying leads and booking appointments on autopilot.",
     points: ["GPT-4o + Embeddings", "Chat / Email / Voice", "+40% lead qualification"],
   },
   {
-    emoji: "⚡",
+    icon: Zap,
     title: "Full-Stack SaaS Apps (MERN + NestJS)",
     desc: "Modular NestJS backend, React frontend — production-ready, scalable architecture.",
     points: ["NestJS modular APIs", "Redis caching", "-30% load time"],
   },
   {
-    emoji: "☁️",
+    icon: Cloud,
     title: "Cloud, Realtime & Integrations",
     desc: "AWS serverless, Socket.io realtime, Twilio calls/SMS, payments, Calendly + Google Meet flows.",
     points: ["AWS Lambda / EC2 / S3", "Socket.io realtime", "Twilio + Payments"],
@@ -334,29 +346,30 @@ export const testimonials: Testimonial[] = [
 /* ---------- Work process (client ko process dikhao = trust) ---------- */
 
 export interface ProcessStep {
-  emoji: string;
+  icon: LucideIcon;
+  emoji?: string; // legacy CMS compat — icon takes precedence
   title: string;
   desc: string;
 }
 
 export const processSteps: ProcessStep[] = [
   {
-    emoji: "🔍",
+    icon: Search,
     title: "1. Discover",
     desc: "A requirement call to lock user flows and success metrics — with a free 30-min consultation.",
   },
   {
-    emoji: "🎨",
+    icon: PenTool,
     title: "2. Design",
     desc: "Clean UI + modular API design. Prototype first, full build after your approval.",
   },
   {
-    emoji: "⚙️",
+    icon: Settings,
     title: "3. Develop",
     desc: "React + NestJS + AI integration with weekly demos, plus a production setup on Redis/AWS.",
   },
   {
-    emoji: "🚀",
+    icon: Rocket,
     title: "4. Deploy & Support",
     desc: "CI/CD deployment, monitoring, and post-launch support — you're never on your own.",
   },

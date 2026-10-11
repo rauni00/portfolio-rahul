@@ -39,7 +39,6 @@ import { GitHubSection, ProcessSection } from "./components/More";
 import GsapEffects from "./components/GsapEffects";
 import AgentConsole from "./components/AgentConsole";
 import CustomCursor from "./components/CustomCursor";
-import ScrollBuddy from "./components/ScrollBuddy";
 import { SectionDivider, SectionReveal } from "./components/SectionTransitions";
 // Spline scene is loaded only for the hero; keeps the page lightweight while using the published 3D asset
 const SplineHero = lazy(() => import("./components/SplineHero"));
@@ -99,24 +98,28 @@ const fadeUp = {
   }),
 };
 
-/* Cinematic section heading with neon kicker */
+/* Cinematic section heading with neon kicker + ghost number */
 function SectionHeading({
   kicker,
   title,
   sub,
   kickerColor = "cyan",
+  no,
+  align = "center",
 }: {
   kicker: string;
   title: string;
   sub?: string;
   kickerColor?: "cyan" | "lime" | "violet" | "amber" | "rose";
+  no?: string;
+  align?: "center" | "left";
 }) {
   const colorMap = {
-    cyan: { border: "rgba(94, 234, 212, 0.25)", bg: "rgba(94, 234, 212, 0.08)", text: "text-teal-600", glow: "rgba(94, 234, 212, 0.15)" },
-    lime: { border: "rgba(251, 191, 36, 0.25)", bg: "rgba(251, 191, 36, 0.08)", text: "text-amber-600", glow: "rgba(251, 191, 36, 0.15)" },
-    violet: { border: "rgba(99, 102, 241, 0.25)", bg: "rgba(99, 102, 241, 0.08)", text: "text-indigo-600", glow: "rgba(99, 102, 241, 0.15)" },
-    amber: { border: "rgba(251, 191, 36, 0.25)", bg: "rgba(251, 191, 36, 0.08)", text: "text-amber-600", glow: "rgba(251, 191, 36, 0.15)" },
-    rose: { border: "rgba(251, 113, 133, 0.25)", bg: "rgba(251, 113, 133, 0.08)", text: "text-orange-600", glow: "rgba(251, 113, 133, 0.15)" },
+    cyan: { border: "rgba(94, 234, 212, 0.25)", bg: "rgba(94, 234, 212, 0.08)", text: "text-teal-300", glow: "rgba(94, 234, 212, 0.15)" },
+    lime: { border: "rgba(251, 191, 36, 0.25)", bg: "rgba(251, 191, 36, 0.08)", text: "text-amber-400", glow: "rgba(251, 191, 36, 0.15)" },
+    violet: { border: "rgba(99, 102, 241, 0.25)", bg: "rgba(99, 102, 241, 0.08)", text: "text-indigo-300", glow: "rgba(99, 102, 241, 0.15)" },
+    amber: { border: "rgba(251, 191, 36, 0.25)", bg: "rgba(251, 191, 36, 0.08)", text: "text-amber-400", glow: "rgba(251, 191, 36, 0.15)" },
+    rose: { border: "rgba(251, 113, 133, 0.25)", bg: "rgba(251, 113, 133, 0.08)", text: "text-orange-400", glow: "rgba(251, 113, 133, 0.15)" },
   };
   const c = colorMap[kickerColor];
 
@@ -126,34 +129,40 @@ function SectionHeading({
       initial="hidden"
       whileInView="show"
       viewport={{ once: true, amount: 0.6 }}
-      className="mx-auto mb-14 max-w-2xl text-center"
+      className={`relative mb-14 max-w-2xl ${align === "left" ? "mx-0 text-left" : "mx-auto text-center"}`}
     >
+      {no && (
+        <span
+          aria-hidden="true"
+          className={`pointer-events-none absolute -top-9 select-none font-display text-7xl font-black tracking-tight text-white/[0.07] ${align === "left" ? "left-0" : "left-1/2 -translate-x-1/2"}`}
+        >
+          {no}
+        </span>
+      )}
       <span
         className={`inline-flex items-center gap-2 rounded-full px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.2em] ${c.text}`}
         style={{ border: `1px solid ${c.border}`, background: c.bg, boxShadow: `0 0 20px ${c.glow}` }}
       >
         <Sparkles size={13} /> {kicker}
       </span>
-      <h2 className="mt-5 font-display gradient-title text-3xl font-bold sm:text-5xl lg:text-[3.2rem] leading-[1.1]">
+      <h2 className="fluid-h2 mt-5 font-display gradient-title font-bold">
         {title}
       </h2>
-      {sub && <p className="mt-4 text-slate-500 leading-relaxed">{sub}</p>}
+      {sub && <p className="mt-4 text-slate-400 leading-relaxed">{sub}</p>}
     </motion.div>
   );
 }
 
 /* ---------- main ---------- */
 
-/* Load the heavy 3D scene only when it makes sense:
-   desktop pointer + no reduced-motion + not a small screen,
-   deferred until after first paint so LCP isn't blocked. */
+/* Load the heavy 3D scene on every screen (mobile included), deferred
+   until after first paint so LCP isn't blocked. Only reduced-motion
+   users skip it — the static content stays fully readable for them. */
 function useShouldLoad3D() {
   const [ok, setOk] = useState(false);
   useEffect(() => {
-    const mqFine = window.matchMedia("(pointer: fine)");
     const mqMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
-    const mqWide = window.matchMedia("(min-width: 640px)");
-    const compute = () => setOk(mqFine.matches && !mqMotion.matches && mqWide.matches);
+    const compute = () => setOk(!mqMotion.matches);
     // Defer past first paint: idle callback with timeout fallback
     const w = window as unknown as {
       requestIdleCallback?: (cb: () => void, opts?: { timeout: number }) => number;
@@ -173,13 +182,9 @@ function useShouldLoad3D() {
       }
     };
     const id = schedule(compute);
-    mqFine.addEventListener?.("change", compute);
-    mqWide.addEventListener?.("change", compute);
     mqMotion.addEventListener?.("change", compute);
     return () => {
       cancel(id);
-      mqFine.removeEventListener?.("change", compute);
-      mqWide.removeEventListener?.("change", compute);
       mqMotion.removeEventListener?.("change", compute);
     };
   }, []);
@@ -231,7 +236,7 @@ export default function App() {
   }, [menuOpen]);
 
   return (
-    <div className="relative min-h-screen bg-[#f6f6f4] font-body text-slate-700 antialiased">
+    <div className="relative min-h-screen bg-[#0B0F17] font-body text-slate-300 antialiased">
       <a
         href="#home"
         className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[100] focus:rounded-full focus:bg-white focus:px-5 focus:py-2 focus:text-sm focus:font-bold focus:text-slate-900 focus:shadow-xl"
@@ -249,7 +254,7 @@ export default function App() {
         data-cursor-hover
       >
         <div className="h-full w-full" style={{
-          background: "linear-gradient(90deg, #5eead4, #6366f1, #fb7185, #fbbf24)",
+          background: "linear-gradient(90deg, #5eead4, #6366f1)",
           boxShadow: "0 0 15px rgba(94, 234, 212, 0.4)",
         }} />
       </motion.div>
@@ -260,9 +265,10 @@ export default function App() {
         className="mouse-glow hidden md:block"
       />
 
-      {/* 3D robot — desktop-only ambient stage (mobile + reduced-motion skip it). */}
+      {/* 3D robot — fixed global ambient stage on every screen (z-0, behind
+          the opaque cards). Right-shifted on desktop so hero copy stays clean. */}
       {shouldLoad3D && (
-        <div className="pointer-events-none fixed inset-0 z-0" aria-hidden="true">
+        <div className="pointer-events-none fixed inset-0 z-0 lg:left-[28%]" aria-hidden="true">
           <div className="h-full w-full origin-center">
             <HeroErrorBoundary>
               <Suspense fallback={null}>
@@ -279,18 +285,27 @@ export default function App() {
       <header className="fixed inset-x-0 top-0 z-50">
         <div className="glass mx-auto mt-3 flex max-w-6xl items-center justify-between rounded-2xl px-4 py-3 shadow-2xl sm:px-6" style={{
           border: "1px solid rgba(94, 234, 212, 0.08)",
-          boxShadow: "0 8px 32px rgba(15, 23, 42, 0.10), 0 0 0 1px rgba(15, 23, 42, 0.04) inset",
+          boxShadow: "0 8px 32px rgba(255, 255, 255, 0.10), 0 0 0 1px rgba(255, 255, 255, 0.05) inset",
         }}>
           <a href="#home" className="group flex items-center gap-3" data-cursor-hover>
-            <span className="grid h-10 w-10 place-items-center rounded-xl font-display text-sm font-bold text-white shadow-lg transition-transform group-hover:rotate-12" style={{
-              background: "linear-gradient(135deg, #4f46e5, #7c3aed)",
-              boxShadow: "0 0 20px rgba(79, 70, 229, 0.4)",
-            }}>
-              {profile.avatarInitials}
-            </span>
-            <span className="font-display text-sm font-bold text-slate-900 sm:text-base">
+            {profile.photo ? (
+              <img
+                src={profile.photo}
+                alt={profile.name}
+                className="h-10 w-10 rounded-xl object-cover shadow-lg transition-transform group-hover:rotate-3"
+                style={{ boxShadow: "0 0 20px rgba(79, 70, 229, 0.4)" }}
+              />
+            ) : (
+              <span className="grid h-10 w-10 place-items-center rounded-xl font-display text-sm font-bold text-white shadow-lg transition-transform group-hover:rotate-12" style={{
+                background: "linear-gradient(135deg, #4f46e5, #7c3aed)",
+                boxShadow: "0 0 20px rgba(79, 70, 229, 0.4)",
+              }}>
+                {profile.avatarInitials}
+              </span>
+            )}
+            <span className="font-display text-sm font-bold text-white sm:text-base">
               {profile.name}
-              <span className="block text-[11px] font-normal text-teal-600/80">
+              <span className="block text-[11px] font-normal text-teal-300/80">
                 {profile.availability}
               </span>
             </span>
@@ -300,7 +315,7 @@ export default function App() {
               <a
                 key={l.href}
                 href={l.href}
-                className="rounded-full px-4 py-2 text-sm text-slate-600 transition hover:bg-slate-900/[0.06] hover:text-slate-900"
+                className="rounded-full px-4 py-2 text-sm text-slate-400 transition hover:bg-white/[0.06] hover:text-white"
                 data-cursor-hover
               >
                 {l.label}
@@ -308,11 +323,7 @@ export default function App() {
             ))}
             <a
               href="#contact"
-              className="ml-2 inline-flex items-center gap-2 rounded-full px-5 py-2 text-sm font-bold text-white transition hover:scale-105"
-              style={{
-                background: "linear-gradient(135deg, #4f46e5, #7c3aed)",
-                boxShadow: "0 0 25px rgba(79, 70, 229, 0.4)",
-              }}
+              className="btn-primary ml-2 inline-flex items-center gap-2 rounded-full px-5 py-2 text-sm font-bold transition hover:scale-105"
               data-cursor-hover
             >
               Hire Me <ArrowRight size={15} />
@@ -320,7 +331,7 @@ export default function App() {
           </nav>
           <button
             onClick={() => setMenuOpen(!menuOpen)}
-            className="grid h-10 w-10 place-items-center rounded-xl border border-slate-900/10 text-slate-900 lg:hidden"
+            className="grid h-10 w-10 place-items-center rounded-xl border border-white/10 text-white lg:hidden"
             aria-label={menuOpen ? "Close menu" : "Open menu"}
             aria-expanded={menuOpen}
             aria-controls="mobile-menu"
@@ -335,14 +346,14 @@ export default function App() {
               initial={{ opacity: 0, y: -12 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -12 }}
-              className="glass mx-auto mt-2 max-w-6xl rounded-2xl border border-slate-900/10 p-3 lg:hidden"
+              className="glass mx-auto mt-2 max-w-6xl rounded-2xl border border-white/10 p-3 lg:hidden"
             >
               {navLinks.map((l) => (
                 <a
                   key={l.href}
                   href={l.href}
                   onClick={() => setMenuOpen(false)}
-                  className="block rounded-xl px-4 py-3 text-sm text-slate-700 hover:bg-slate-900/[0.06]"
+                  className="block rounded-xl px-4 py-3 text-sm text-slate-300 hover:bg-white/[0.06]"
                 >
                   {l.label}
                 </a>
@@ -358,33 +369,39 @@ export default function App() {
         <div data-speed="0.35" className="gs-parallax pointer-events-none absolute -left-40 top-10 h-[28rem] w-[28rem] rounded-full blur-[130px]" style={{ background: "rgba(94, 234, 212, 0.12)" }} />
         <div data-speed="0.2" className="gs-parallax pointer-events-none absolute -right-40 top-32 h-[32rem] w-[32rem] rounded-full blur-[140px]" style={{ background: "rgba(99, 102, 241, 0.12)", animationDelay: "-4s" }} />
         <div data-speed="0.45" className="gs-parallax pointer-events-none absolute bottom-0 left-1/3 h-80 w-80 rounded-full blur-[110px]" style={{ background: "rgba(251, 113, 133, 0.06)" }} />
-        {/* Mobile-only readability wash (desktop uses the right-shifted stage) */}
-        <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-[#f6f6f4]/75 via-[#f6f6f4]/30 to-transparent sm:hidden" />
+        {/* Mobile-only readability wash (desktop uses the left-column wash below) */}
+        <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-[#0B0F17]/75 via-[#0B0F17]/30 to-transparent sm:hidden" />
+        {/* Desktop readability wash behind the copy column (softens the 3D) */}
+        <div className="pointer-events-none absolute inset-y-0 left-0 hidden w-2/3 bg-gradient-to-r from-[#0B0F17] via-[#0B0F17]/80 to-transparent lg:block" />
 
         <div className="relative z-10 mx-auto grid max-w-6xl items-center gap-12 px-5 sm:px-8 lg:grid-cols-2">
           {/* Left: Text content */}
           <div>
             <div
               data-gs-badge
-              className="inline-flex items-center gap-2 rounded-full border border-slate-900/10 bg-white px-4 py-1.5 text-xs font-semibold text-slate-700 shadow-sm"
+              className="flex items-center gap-3"
             >
+              {profile.photo && (
+                <img
+                  src={profile.photo}
+                  alt={profile.name}
+                  className="h-12 w-12 rounded-full object-cover shadow-lg ring-2 ring-teal-400/40"
+                />
+              )}
+              <span className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-1.5 text-xs font-semibold text-slate-200 shadow-sm">
               <span className="relative flex h-2 w-2">
-                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-amber-400 opacity-75" />
-                <span className="relative inline-flex h-2 w-2 rounded-full bg-amber-400" />
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-500 opacity-75" />
+                <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
               </span>
               {profile.availability}
+              </span>
             </div>
 
-            <h1 className="mt-6 font-display text-4xl font-extrabold leading-[1.02] text-slate-900 sm:text-6xl lg:text-7xl">
+            <h1 className="fluid-display mt-6 font-display font-extrabold text-white">
               <span className="block overflow-hidden pb-1">
-                <span data-gs-line className="block text-slate-700">
+                <span data-gs-line className="block text-slate-300">
                   Hi, I'm{" "}
-                  <span style={{
-                    background: "linear-gradient(135deg, #0d9488, #4f46e5, #d97706)",
-                    WebkitBackgroundClip: "text",
-                    WebkitTextFillColor: "transparent",
-                    backgroundClip: "text",
-                  }}>
+                  <span className="text-brand-gradient">
                     {profile.firstName}
                   </span>
                 </span>
@@ -392,25 +409,21 @@ export default function App() {
               <span className="block overflow-hidden pb-2">
                 <span
                   data-gs-line
-                  className="text-stroke block font-black uppercase tracking-[-0.06em] text-slate-900/90"
+                  className="text-stroke block font-black uppercase tracking-[-0.06em] text-white/90"
                 >
                   {profile.role}
                 </span>
               </span>
             </h1>
 
-            <p data-gs-fade className="mt-5 max-w-lg text-lg leading-relaxed text-slate-600">
+            <p data-gs-fade className="mt-5 max-w-lg text-lg leading-relaxed text-slate-400">
               {profile.tagline}
             </p>
 
             <div data-gs-fade className="mt-8 flex flex-wrap gap-3">
               <a
                 href="#projects"
-                className="primary-button magnetic group inline-flex items-center gap-2 rounded-full px-7 py-3.5 text-sm font-bold text-white transition hover:scale-[1.02]"
-                style={{
-                  background: "linear-gradient(135deg, #4f46e5, #7c3aed)",
-                  boxShadow: "0 10px 40px rgba(79, 70, 229, 0.35), 0 0 0 1px rgba(79, 70, 229, 0.25)",
-                }}
+                className="primary-button magnetic btn-primary group inline-flex items-center gap-2 rounded-full px-7 py-3.5 text-sm font-bold transition hover:scale-[1.02]"
                 data-cursor-hover
               >
                 <Rocket size={16} /> View My Work
@@ -425,39 +438,38 @@ export default function App() {
                     if (!ok) window.location.href = resumeUrl;
                   });
                 }}
-                className="magnetic inline-flex items-center gap-2 rounded-full bg-white px-7 py-3.5 text-sm font-semibold text-slate-900 shadow-[0_2px_12px_rgba(15,23,42,0.08)] transition hover:shadow-[0_8px_24px_rgba(15,23,42,0.12)]"
-                style={{ border: "1px solid rgba(15, 23, 42, 0.12)" }}
+                className="magnetic inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/5 px-7 py-3.5 text-sm font-semibold text-white transition hover:border-teal-400/40 hover:bg-white/10"
                 data-cursor-hover
               >
                 <Download size={16} /> Download Resume
               </a>
             </div>
 
-            <div data-gs-fade className="mt-6 flex flex-wrap items-center gap-x-3 gap-y-2 text-sm text-slate-500">
+            <div data-gs-fade className="mt-6 flex flex-wrap items-center gap-x-3 gap-y-2 text-sm text-slate-400">
               <span className="inline-flex items-center gap-1.5">
-                <MapPin size={15} className="text-teal-600" /> {profile.location}
+                <MapPin size={15} className="text-teal-300" /> {profile.location}
               </span>
               <span className="hidden h-1 w-1 rounded-full bg-slate-300 sm:block" />
               <span className="hidden items-center gap-1.5 sm:inline-flex">
-                <Phone size={15} className="text-teal-600" /> {profile.phone}
+                <Phone size={15} className="text-teal-300" /> {profile.phone}
               </span>
               <span className="hidden h-1 w-1 rounded-full bg-slate-300 sm:block" />
-              <a href="#contact" className="font-semibold text-indigo-600 hover:underline" data-cursor-hover>
+              <a href="#contact" className="font-semibold text-indigo-300 hover:underline" data-cursor-hover>
                 Let's work together →
               </a>
             </div>
 
             <div
               data-gs-stat
-              className="mt-8 grid max-w-xl grid-cols-2 divide-slate-900/10 rounded-2xl border border-slate-900/10 bg-white/80 backdrop-blur-sm sm:grid-cols-4 sm:divide-x"
-              style={{ boxShadow: "0 12px 40px rgba(15, 23, 42, 0.08)" }}
+              className="mt-8 grid max-w-xl grid-cols-2 divide-white/10 rounded-2xl border border-white/10 bg-white/[0.04] backdrop-blur-sm sm:grid-cols-4 sm:divide-x"
+              style={{ boxShadow: "0 12px 40px rgba(0, 0, 0, 0.4)" }}
             >
               {stats.map((s) => (
                 <div key={s.label} className="px-4 py-4 text-center">
-                  <div className="font-display text-2xl font-extrabold text-slate-900">
+                  <div className="font-display text-2xl font-extrabold text-white">
                     <CountUp value={s.value} suffix={s.suffix} />
                   </div>
-                  <div className="mt-1 text-[10px] uppercase tracking-wider text-slate-500">
+                  <div className="mt-1 text-[10px] uppercase tracking-wider text-slate-400">
                     {s.label}
                   </div>
                 </div>
@@ -465,8 +477,10 @@ export default function App() {
             </div>
           </div>
 
-          {/* Right: open window — the global 3D shows through here */}
-          <div className="hidden lg:block" aria-hidden="true" />
+          {/* Right: live AI agent console (dark default blends with the 3D stage) */}
+          <div data-gs-fade className="relative mx-auto w-full max-w-md lg:mx-0">
+            <AgentConsole />
+          </div>
         </div>
 
       </section>
@@ -481,10 +495,10 @@ export default function App() {
           {[...marqueeSkills, ...marqueeSkills].map((s, i) => (
             <span
               key={i}
-              className="whitespace-nowrap rounded-full px-5 py-2 text-sm font-semibold text-slate-600"
+              className="whitespace-nowrap rounded-full px-5 py-2 text-sm font-semibold text-slate-400"
               style={{
-                border: "1px solid rgba(15, 23, 42, 0.06)",
-                background: "#ffffff",
+                border: "1px solid rgba(255, 255, 255, 0.08)",
+                background: "rgba(255, 255, 255, 0.04)",
               }}
             >
               ✦ {s}
@@ -510,6 +524,7 @@ export default function App() {
             title="Skills that ship production apps"
             sub="Frontend to backend to GenAI — full stack, end to end."
             kickerColor="cyan"
+            no="01"
           />
           <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
             {skillGroups.map((g, i) => (
@@ -533,15 +548,15 @@ export default function App() {
                 >
                   <g.icon size={22} />
                 </div>
-                <h3 className="font-display text-lg font-bold text-slate-900">{g.title}</h3>
+                <h3 className="font-display text-lg font-bold text-white">{g.title}</h3>
                 <div className="mt-3 flex flex-wrap gap-2">
                   {g.skills.map((s) => (
                     <span
                       key={s}
-                      className="rounded-full px-3 py-1 text-xs text-slate-600 transition group-hover:border-slate-900/15 hover:!border-teal-400/40 hover:text-slate-900"
+                      className="rounded-full px-3 py-1 text-xs text-slate-400 transition group-hover:border-white/15 hover:!border-teal-400/40 hover:text-white"
                       style={{
-                        border: "1px solid rgba(15, 23, 42, 0.06)",
-                        background: "#ffffff",
+                        border: "1px solid rgba(255, 255, 255, 0.08)",
+                        background: "rgba(255, 255, 255, 0.04)",
                       }}
                     >
                       {s}
@@ -559,9 +574,9 @@ export default function App() {
       {/* ═══════════ EXPERIENCE ═══════════ */}
       <SectionReveal>
         <section id="experience" className="relative z-10 overflow-hidden py-24" style={{
-          borderTop: "1px solid rgba(15, 23, 42, 0.06)",
-          borderBottom: "1px solid rgba(15, 23, 42, 0.06)",
-          background: "rgba(15, 23, 42, 0.02)",
+          borderTop: "1px solid rgba(255, 255, 255, 0.08)",
+          borderBottom: "1px solid rgba(255, 255, 255, 0.08)",
+          background: "rgba(255, 255, 255, 0.025)",
         }}>
           <div data-speed="0.3" className="gs-parallax pointer-events-none absolute -left-40 top-24 h-[26rem] w-[26rem] rounded-full blur-[130px]" style={{ background: "rgba(45, 212, 191, 0.09)" }} />
           <div className="mx-auto max-w-6xl px-5 sm:px-8">
@@ -569,6 +584,8 @@ export default function App() {
               kicker="Career Journey"
               title="Where I've worked & what I delivered"
               kickerColor="violet"
+              no="02"
+              align="left"
             />
             <div className="relative space-y-6 before:absolute before:bottom-4 before:left-[19px] before:top-4 before:w-px sm:before:left-1/2" style={{
               /* neon timeline line */
@@ -591,12 +608,12 @@ export default function App() {
                   } pl-12 sm:pl-0`}
                 >
                   <span
-                    className={`absolute left-3 top-6 grid h-9 w-9 place-items-center rounded-full text-teal-600 sm:left-auto ${
+                    className={`absolute left-3 top-6 grid h-9 w-9 place-items-center rounded-full text-teal-300 sm:left-auto ${
                       i % 2 === 0 ? "sm:-right-[18px]" : "sm:-left-[18px]"
                     }`}
                     style={{
                       border: "1px solid rgba(94, 234, 212, 0.3)",
-                      background: "#ffffff",
+                      background: "rgba(255, 255, 255, 0.04)",
                       boxShadow: "0 0 15px rgba(94, 234, 212, 0.15)",
                     }}
                   >
@@ -604,16 +621,16 @@ export default function App() {
                   </span>
                   <div className="neon-card w-full p-6 shadow-xl">
                     <span
-                      className="rounded-full px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-teal-600"
+                      className="rounded-full px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-teal-300"
                       style={{ background: "rgba(94, 234, 212, 0.08)" }}
                     >
                       {e.period}
                     </span>
-                    <h3 className="mt-3 font-display text-lg font-bold text-slate-900">{e.role}</h3>
-                    <p className="text-sm font-semibold text-indigo-600">
+                    <h3 className="mt-3 font-display text-lg font-bold text-white">{e.role}</h3>
+                    <p className="text-sm font-semibold text-indigo-300">
                       {e.company} • {e.location}
                     </p>
-                    <ul className="mt-3 space-y-2 text-sm leading-relaxed text-slate-500">
+                    <ul className="mt-3 space-y-2.5 text-sm font-medium leading-relaxed text-slate-300">
                       {e.points.map((p) => (
                         <li key={p} className="flex gap-2">
                           <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full" style={{
@@ -627,10 +644,10 @@ export default function App() {
                       {e.tags.map((t) => (
                         <span
                           key={t}
-                          className="rounded-full px-3 py-0.5 text-[11px] text-slate-600"
+                          className="rounded-full px-3 py-0.5 text-[11px] text-slate-400"
                           style={{
-                            border: "1px solid rgba(15, 23, 42, 0.06)",
-                            background: "rgba(15, 23, 42, 0.03)",
+                            border: "1px solid rgba(255, 255, 255, 0.08)",
+                            background: "rgba(255, 255, 255, 0.04)",
                           }}
                         >
                           {t}
@@ -656,7 +673,8 @@ export default function App() {
             kicker="Featured Work"
             title="Projects with real users & revenue impact"
             sub="AI platforms, healthcare, IoT, SaaS — all production-ready."
-            kickerColor="rose"
+            kickerColor="cyan"
+            no="03"
           />
           {/* Filter tabs */}
           <div className="mb-10 flex flex-wrap justify-center gap-2">
@@ -668,9 +686,9 @@ export default function App() {
                 style={{
                   background: projectFilter === f
                     ? "linear-gradient(135deg, #4f46e5, #7c3aed)"
-                    : "rgba(15, 23, 42, 0.03)",
-                  color: projectFilter === f ? "#ffffff" : "#94a3b8",
-                  border: `1px solid ${projectFilter === f ? "transparent" : "rgba(15, 23, 42, 0.08)"}`,
+                    : "rgba(255, 255, 255, 0.04)",
+                  color: projectFilter === f ? "rgba(255, 255, 255, 0.04)" : "#94a3b8",
+                  border: `1px solid ${projectFilter === f ? "transparent" : "rgba(255, 255, 255, 0.10)"}`,
                   boxShadow: projectFilter === f ? "0 0 25px rgba(79, 70, 229, 0.35)" : "none",
                 }}
                 data-cursor-hover
@@ -701,7 +719,7 @@ export default function App() {
                 initial="hidden"
                 whileInView="show"
                 viewport={{ once: true, amount: 0.3 }}
-                className={`project-card-premium group relative ${
+                className={`project-card-premium group relative flex h-full flex-col ${
                   p.featured ? "md:col-span-1" : ""
                 }`}
                 style={{
@@ -711,9 +729,17 @@ export default function App() {
                 {/* Gradient top bar */}
                 <div className={`h-[3px] bg-gradient-to-r ${p.gradient}`} style={{ opacity: 0.8 }} />
                 
-                <div className="p-6 sm:p-7">
+                <div className="flex flex-1 flex-col p-6 sm:p-7">
                   <div className="flex items-start justify-between gap-3">
-                    <span className="text-4xl">{p.emoji}</span>
+                    {p.icon ? (
+                      <span
+                        className={`grid h-14 w-14 shrink-0 place-items-center rounded-2xl bg-gradient-to-br text-white shadow-lg ${p.gradient}`}
+                      >
+                        <p.icon size={26} />
+                      </span>
+                    ) : (
+                      <span className="text-4xl">{p.emoji}</span>
+                    )}
                     {p.featured && (
                       <span
                         className="inline-flex items-center gap-1 rounded-full px-3 py-1.5 text-[11px] font-bold text-white"
@@ -726,39 +752,53 @@ export default function App() {
                       </span>
                     )}
                   </div>
-                  <h3 className="mt-3 font-display text-2xl font-bold text-slate-900 transition group-hover:text-teal-700">
+                  <h3 className="mt-3 font-display text-2xl font-bold text-white transition group-hover:text-teal-300">
                     {p.title}
                   </h3>
-                  <p className="text-sm font-semibold text-indigo-600">{p.subtitle}</p>
-                  <p className="mt-3 text-sm leading-relaxed text-slate-500">{p.description}</p>
+                  <p className="text-sm font-semibold text-indigo-300">{p.subtitle}</p>
+                  <p className="mt-3 text-sm font-medium leading-relaxed text-slate-300">{p.description}</p>
                   {p.impact && (
-                    <p className="mt-3 inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[11px] font-bold text-teal-700" style={{ border: "1px solid rgba(94, 234, 212, 0.25)", background: "rgba(94, 234, 212, 0.07)" }}>
-                      ✓ {p.impact}
+                    <p className="mt-3 flex items-center gap-1.5 text-[11px] font-semibold text-slate-400">
+                      <span className="grid h-4 w-4 shrink-0 place-items-center rounded-full bg-teal-500/15 text-[10px] font-black text-teal-300">
+                        ✓
+                      </span>
+                      {p.impact}
                     </p>
                   )}
                   <div className="mt-4 flex flex-wrap gap-2">
-                    {p.tech.map((t) => (
+                    {p.tech.slice(0, 4).map((t) => (
                       <span
                         key={t}
-                        className="rounded-lg px-2.5 py-1 text-[11px] font-medium text-slate-600 transition hover:border-teal-400/30 hover:text-teal-700"
+                        className="rounded-lg px-2.5 py-1 text-[11px] font-medium text-slate-400 transition hover:border-teal-400/30 hover:text-teal-300"
                         style={{
-                          border: "1px solid rgba(15, 23, 42, 0.06)",
-                          background: "rgba(15, 23, 42, 0.03)",
+                          border: "1px solid rgba(255, 255, 255, 0.08)",
+                          background: "rgba(255, 255, 255, 0.04)",
                         }}
                       >
                         {t}
                       </span>
                     ))}
+                    {p.tech.length > 4 && (
+                      <span
+                        className="rounded-lg px-2.5 py-1 text-[11px] font-semibold text-indigo-300"
+                        style={{
+                          border: "1px solid rgba(99, 102, 241, 0.2)",
+                          background: "rgba(99, 102, 241, 0.06)",
+                        }}
+                      >
+                        +{p.tech.length - 4} more
+                      </span>
+                    )}
                   </div>
                   {p.links.length > 0 && (
-                    <div className="mt-5 flex flex-wrap gap-3">
+                    <div className="mt-auto flex flex-wrap gap-3 pt-5">
                       {p.links.map((l) => (
                         <a
                           key={l.href}
                           href={l.href}
                           target="_blank"
                           rel="noreferrer"
-                          className="inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-xs font-bold text-teal-700 transition hover:text-indigo-600"
+                          className="inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-xs font-bold text-teal-300 transition hover:text-indigo-300"
                           style={{
                             border: "1px solid rgba(94, 234, 212, 0.2)",
                             background: "rgba(94, 234, 212, 0.06)",
@@ -808,9 +848,9 @@ export default function App() {
       {/* ═══════════ EDUCATION + ACHIEVEMENTS ═══════════ */}
       <SectionReveal>
         <section className="relative z-10 overflow-hidden py-24" style={{
-          borderTop: "1px solid rgba(15, 23, 42, 0.06)",
-          borderBottom: "1px solid rgba(15, 23, 42, 0.06)",
-          background: "rgba(15, 23, 42, 0.02)",
+          borderTop: "1px solid rgba(255, 255, 255, 0.08)",
+          borderBottom: "1px solid rgba(255, 255, 255, 0.08)",
+          background: "rgba(255, 255, 255, 0.025)",
         }}>
           <div data-speed="0.32" className="gs-parallax pointer-events-none absolute -left-32 top-16 h-80 w-80 rounded-full blur-[120px]" style={{ background: "rgba(99, 102, 241, 0.08)" }} />
           <div className="mx-auto grid max-w-6xl gap-6 px-5 sm:px-8 lg:grid-cols-2">
@@ -821,8 +861,8 @@ export default function App() {
               viewport={{ once: true, amount: 0.3 }}
               className="neon-card p-7"
             >
-              <h3 className="flex items-center gap-2 font-display text-xl font-bold text-slate-900">
-                <GraduationCap className="text-teal-600" /> Education
+              <h3 className="flex items-center gap-2 font-display text-xl font-bold text-white">
+                <GraduationCap className="text-teal-300" /> Education
               </h3>
               <div className="mt-5 space-y-4">
                 {education.map((e) => (
@@ -830,25 +870,25 @@ export default function App() {
                     key={e.degree}
                     className="rounded-2xl p-4"
                     style={{
-                      border: "1px solid rgba(15, 23, 42, 0.06)",
-                      background: "rgba(15, 23, 42, 0.02)",
+                      border: "1px solid rgba(255, 255, 255, 0.08)",
+                      background: "rgba(255, 255, 255, 0.025)",
                     }}
                   >
-                    <p className="font-semibold text-slate-900">{e.degree}</p>
-                    <p className="mt-1 text-sm text-slate-500">
+                    <p className="font-semibold text-white">{e.degree}</p>
+                    <p className="mt-1 text-sm text-slate-400">
                       {e.school} • {e.period}
                     </p>
                   </div>
                 ))}
               </div>
               <div
-                className="mt-6 rounded-2xl p-4 text-sm text-slate-600"
+                className="mt-6 rounded-2xl p-4 text-sm text-slate-400"
                 style={{
                   border: "1px solid rgba(251, 191, 36, 0.15)",
                   background: "rgba(251, 191, 36, 0.04)",
                 }}
               >
-                <span className="font-bold text-amber-600">Stack:</span> MERN • NestJS •
+                <span className="font-bold text-amber-400">Stack:</span> MERN • NestJS •
                 TypeScript • MongoDB / MySQL / Redis • AWS • Docker • Socket.io • Twilio
               </div>
             </motion.div>
@@ -861,8 +901,8 @@ export default function App() {
               className="neon-card p-7"
               style={{ background: "linear-gradient(180deg, rgba(99, 102, 241, 0.06), transparent)" }}
             >
-              <h3 className="flex items-center gap-2 font-display text-xl font-bold text-slate-900">
-                <Award className="text-amber-600" /> Key Achievements
+              <h3 className="flex items-center gap-2 font-display text-xl font-bold text-white">
+                <Award className="text-amber-400" /> Key Achievements
               </h3>
               <ul className="mt-5 space-y-3">
                 {achievements.map((a, i) => (
@@ -872,10 +912,10 @@ export default function App() {
                     whileInView={{ opacity: 1, x: 0 }}
                     viewport={{ once: true, amount: 0.3 }}
                     transition={{ delay: i * 0.1 }}
-                    className="flex gap-3 rounded-2xl p-4 text-sm leading-relaxed text-slate-600"
+                    className="flex gap-3 rounded-2xl p-4 text-sm leading-relaxed text-slate-400"
                     style={{
-                      border: "1px solid rgba(15, 23, 42, 0.06)",
-                      background: "#ffffff",
+                      border: "1px solid rgba(255, 255, 255, 0.08)",
+                      background: "rgba(255, 255, 255, 0.04)",
                     }}
                   >
                     <span
@@ -912,9 +952,9 @@ export default function App() {
                     viewport={{ once: true, amount: 0.3 }}
           className="relative overflow-hidden rounded-[2.5rem] p-8 text-center sm:p-14"
           style={{
-            background: "linear-gradient(135deg, rgba(94, 234, 212, 0.12), rgba(255, 255, 255, 0.95), rgba(99, 102, 241, 0.12))",
-            border: "1px solid rgba(94, 234, 212, 0.1)",
-            boxShadow: "0 0 60px rgba(94, 234, 212, 0.10), 0 40px 80px rgba(15, 23, 42, 0.12)",
+            background: "linear-gradient(135deg, rgba(94, 234, 212, 0.07), rgba(11, 15, 23, 0.9), rgba(99, 102, 241, 0.09))",
+            border: "1px solid rgba(255, 255, 255, 0.08)",
+            boxShadow: "0 0 60px rgba(99, 102, 241, 0.12), 0 40px 80px rgba(0, 0, 0, 0.5)",
           }}
         >
           {/* Animated glow orbs */}
@@ -929,19 +969,19 @@ export default function App() {
           }} />
           <div className="contact-glow-orb" style={{
             width: 200, height: 200, top: "50%", left: "50%", marginTop: -100, marginLeft: -100,
-            background: "rgba(251, 113, 133, 0.06)",
+            background: "rgba(99, 102, 241, 0.08)",
             animationDelay: "3s",
           }} />
 
           {/* Top animated border */}
           <div className="absolute top-0 left-0 right-0 h-[2px]" style={{
-            background: "linear-gradient(90deg, transparent, #5eead4, #6366f1, #fb7185, #6366f1, #5eead4, transparent)",
+            background: "linear-gradient(90deg, transparent, #5eead4, #6366f1, #5eead4, transparent)",
             backgroundSize: "200% 100%",
             animation: "holographic 5s ease infinite",
           }} />
 
           <span
-            className="inline-flex items-center gap-2 rounded-full px-4 py-1.5 text-xs font-bold uppercase tracking-[0.2em] text-teal-700"
+            className="inline-flex items-center gap-2 rounded-full px-4 py-1.5 text-xs font-bold uppercase tracking-[0.2em] text-teal-300"
             style={{
               border: "1px solid rgba(94, 234, 212, 0.2)",
               background: "rgba(94, 234, 212, 0.06)",
@@ -950,38 +990,29 @@ export default function App() {
           >
             <Send size={13} /> Let's build something amazing
           </span>
-          <h2 className="mx-auto mt-5 max-w-2xl font-display gradient-title text-3xl font-extrabold sm:text-5xl leading-[1.1]">
+          <h2 className="fluid-h2 mx-auto mt-5 max-w-2xl font-display gradient-title font-extrabold">
             Have an idea? Let's turn it into a{" "}
-              <span style={{
-              background: "linear-gradient(135deg, #0d9488, #4f46e5)",
-              WebkitBackgroundClip: "text",
-              WebkitTextFillColor: "transparent",
-              backgroundClip: "text",
-            }}>
+              <span className="text-brand-gradient">
               production app.
             </span>
           </h2>
-          <p className="mx-auto mt-4 max-w-xl text-slate-500 leading-relaxed">
+          <p className="mx-auto mt-4 max-w-xl text-slate-400 leading-relaxed">
             Immediate joiner. AI chatbots, voice bots, full-stack SaaS — reply within 24 hours.
           </p>
           <div className="mt-8 flex flex-col items-stretch justify-center gap-3 sm:flex-row sm:flex-wrap sm:items-center">
             <a
               href={`mailto:${profile.email}`}
-              className="inline-flex max-w-full items-center justify-center gap-2 break-all rounded-full px-6 py-3.5 text-sm font-bold text-white transition hover:scale-105 sm:px-8"
-              style={{
-                background: "linear-gradient(135deg, #4f46e5, #7c3aed)",
-                boxShadow: "0 0 30px rgba(79, 70, 229, 0.35), 0 10px 40px rgba(15, 23, 42, 0.15)",
-              }}
+              className="btn-primary inline-flex max-w-full items-center justify-center gap-2 break-all rounded-full px-6 py-3.5 text-sm font-bold transition hover:scale-105 sm:px-8"
               data-cursor-hover
             >
               <Mail size={16} className="shrink-0" /> {profile.email}
             </a>
             <a
               href={`tel:${profile.phone.replace(/[^+\d]/g, "")}`}
-              className="inline-flex items-center justify-center gap-2 rounded-full px-6 py-3.5 text-sm font-semibold text-slate-900 transition hover:border-teal-400/30 sm:px-8"
+              className="inline-flex items-center justify-center gap-2 rounded-full px-6 py-3.5 text-sm font-semibold text-white transition hover:border-teal-400/30 sm:px-8"
               style={{
-                border: "1px solid rgba(15, 23, 42, 0.1)",
-                background: "rgba(15, 23, 42, 0.04)",
+                border: "1px solid rgba(255, 255, 255, 0.10)",
+                background: "rgba(255, 255, 255, 0.05)",
               }}
               data-cursor-hover
             >
@@ -992,7 +1023,7 @@ export default function App() {
                 href={profile.calendly}
                 target="_blank"
                 rel="noreferrer"
-                className="inline-flex items-center justify-center gap-2 rounded-full px-6 py-3.5 text-sm font-bold text-teal-700 transition hover:scale-105 sm:px-8"
+                className="inline-flex items-center justify-center gap-2 rounded-full px-6 py-3.5 text-sm font-bold text-teal-300 transition hover:scale-105 sm:px-8"
                 style={{
                   border: "1px solid rgba(94, 234, 212, 0.3)",
                   background: "rgba(94, 234, 212, 0.08)",
@@ -1010,17 +1041,17 @@ export default function App() {
                 href={s.href}
                 target="_blank"
                 rel="noreferrer"
-                className="inline-flex items-center gap-2 rounded-full px-4 py-2 text-xs text-slate-600 transition hover:text-slate-900"
+                className="inline-flex items-center gap-2 rounded-full px-4 py-2 text-xs text-slate-400 transition hover:text-white"
                 style={{
-                  border: "1px solid rgba(15, 23, 42, 0.06)",
-                  background: "#ffffff",
+                  border: "1px solid rgba(255, 255, 255, 0.08)",
+                  background: "rgba(255, 255, 255, 0.04)",
                 }}
                 onMouseEnter={(e) => {
                   (e.currentTarget as HTMLElement).style.borderColor = "rgba(94, 234, 212, 0.3)";
                   (e.currentTarget as HTMLElement).style.boxShadow = "0 0 15px rgba(94, 234, 212, 0.1)";
                 }}
                 onMouseLeave={(e) => {
-                  (e.currentTarget as HTMLElement).style.borderColor = "rgba(15, 23, 42, 0.06)";
+                  (e.currentTarget as HTMLElement).style.borderColor = "rgba(255, 255, 255, 0.08)";
                   (e.currentTarget as HTMLElement).style.boxShadow = "none";
                 }}
                 data-cursor-hover
@@ -1048,8 +1079,8 @@ export default function App() {
                 {profile.avatarInitials}
               </span>
               <div>
-                <p className="font-display text-sm font-bold text-slate-900">{profile.name}</p>
-                <p className="text-[11px] text-slate-500">Full Stack Developer • AI Specialist</p>
+                <p className="font-display text-sm font-bold text-white">{profile.name}</p>
+                <p className="text-[11px] text-slate-400">Full Stack Developer • AI Specialist</p>
               </div>
             </div>
             <nav className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2">
@@ -1057,7 +1088,7 @@ export default function App() {
                 <a
                   key={l.href}
                   href={l.href}
-                  className="text-xs font-medium text-slate-500 transition hover:text-indigo-600"
+                  className="text-xs font-medium text-slate-400 transition hover:text-indigo-300"
                   data-cursor-hover
                 >
                   {l.label}
@@ -1072,7 +1103,7 @@ export default function App() {
                   target="_blank"
                   rel="noreferrer"
                   aria-label={s.label}
-                  className="grid h-9 w-9 place-items-center rounded-full border border-slate-900/10 bg-white text-slate-500 shadow-sm transition hover:-translate-y-0.5 hover:border-indigo-500/40 hover:text-indigo-600 hover:shadow-md"
+                  className="grid h-9 w-9 place-items-center rounded-full border border-white/10 bg-white/5 text-slate-400 shadow-sm transition hover:-translate-y-0.5 hover:border-indigo-500/40 hover:text-indigo-300 hover:shadow-md"
                   data-cursor-hover
                 >
                   <s.icon size={15} />
@@ -1080,21 +1111,20 @@ export default function App() {
               ))}
             </div>
           </div>
-          <div className="mt-8 flex flex-col items-center justify-between gap-2 border-t border-slate-900/10 pt-6 text-xs text-slate-500 sm:flex-row">
+          <div className="mt-8 flex flex-col items-center justify-between gap-2 border-t border-white/10 pt-6 text-xs text-slate-400 sm:flex-row">
             <p className="inline-flex items-center gap-1.5">
               <MapPin size={12} /> © {currentYear} {profile.name} • {profile.location}
             </p>
             <p className="inline-flex items-center gap-1">
-              Made with <Heart size={11} className="text-orange-600" fill="currentColor" /> in India
+              Made with <Heart size={11} className="text-orange-400" fill="currentColor" /> in India
             </p>
           </div>
         </div>
       </footer>
 
-      {/* floating: whatsapp + copy-email + back-to-top + AI chat + scroll buddy */}
+      {/* floating: unified dock (copy + WhatsApp + top) + bottom-left AI chat */}
       <FloatingActions showTop={showTop} hidden={chatOpen} />
       <ChatWidget open={chatOpen} onOpenChange={setChatOpen} />
-      <ScrollBuddy hide={chatOpen} />
     </div>
   );
 }
