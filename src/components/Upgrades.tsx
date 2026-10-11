@@ -19,17 +19,52 @@ import {
 import { chatFaqs as fallbackFaqs, profile as fallbackProfile, services as fallbackServices, testimonialNote as fallbackNote, testimonials as fallbackTestimonials } from "../data";
 import { usePortfolio } from "../lib/usePortfolio";
 import { submitPortfolioLead, saveChatSession, isApiEnabled } from "../lib/api";
+import { markPreloaderDone, PRELOADER_SEEN_KEY } from "../lib/loading";
 
 /* ================= PRELOADER (cinematic) ================= */
 
 export function Preloader() {
-  const [done, setDone] = useState(false);
+  // Repeat views in the same tab skip the splash — content shows instantly.
+  const [done, setDone] = useState(() => {
+    try {
+      return sessionStorage.getItem(PRELOADER_SEEN_KEY) === "1";
+    } catch {
+      return false;
+    }
+  });
   const { data } = usePortfolio();
   const profile = data.profile ?? fallbackProfile;
   useEffect(() => {
-    const t = setTimeout(() => setDone(true), 1400);
-    return () => clearTimeout(t);
-  }, []);
+    if (done) {
+      markPreloaderDone();
+      return;
+    }
+    const start = performance.now();
+    const finished = { current: false };
+    const finish = () => {
+      if (finished.current) return;
+      finished.current = true;
+      // Min 500ms so the brand flash never strobes, then hand off to the hero
+      const wait = Math.max(0, 500 - (performance.now() - start));
+      window.setTimeout(() => {
+        setDone(true);
+        try {
+          sessionStorage.setItem(PRELOADER_SEEN_KEY, "1");
+        } catch {
+          /* storage unavailable */
+        }
+        markPreloaderDone();
+      }, wait);
+    };
+    // Hide on window load, with a 1200ms cap so slow assets never trap users
+    const max = window.setTimeout(finish, 1200);
+    if (document.readyState === "complete") finish();
+    else window.addEventListener("load", finish, { once: true });
+    return () => {
+      window.clearTimeout(max);
+      window.removeEventListener("load", finish);
+    };
+  }, [done]);
   return (
     <AnimatePresence>
       {!done && (

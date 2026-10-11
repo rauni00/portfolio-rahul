@@ -103,7 +103,20 @@ export default function SplineHero({ height = 620, fill = false }: { height?: nu
      part can ever detach — only the head joints get extra rotation. */
   useEffect(() => {
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    // Head tracking is desktop-only (fine pointer + wide screen).
+    // On mobile the head stays straight — no cursor to follow.
+    const mqFine = window.matchMedia("(pointer: fine)");
+    const mqWide = window.matchMedia("(min-width: 640px)");
+    const enabled = { current: mqFine.matches && mqWide.matches };
+    const sync = () => {
+      enabled.current = mqFine.matches && mqWide.matches;
+      if (!enabled.current) {
+        target.current.x = 0;
+        target.current.y = 0;
+      }
+    };
     const onMove = (e: MouseEvent) => {
+      if (!enabled.current) return;
       target.current.x = (e.clientX / window.innerWidth - 0.5) * 2;
       target.current.y = (e.clientY / window.innerHeight - 0.5) * 2;
     };
@@ -140,9 +153,13 @@ export default function SplineHero({ height = 620, fill = false }: { height?: nu
       raf = requestAnimationFrame(tick);
     };
     window.addEventListener("mousemove", onMove);
+    mqFine.addEventListener?.("change", sync);
+    mqWide.addEventListener?.("change", sync);
     raf = requestAnimationFrame(tick);
     return () => {
       window.removeEventListener("mousemove", onMove);
+      mqFine.removeEventListener?.("change", sync);
+      mqWide.removeEventListener?.("change", sync);
       cancelAnimationFrame(raf);
     };
   }, []);

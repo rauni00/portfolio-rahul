@@ -1,10 +1,9 @@
 import { useEffect } from "react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
+import { preloaderFinished } from "../lib/loading";
 
 gsap.registerPlugin(ScrollTrigger);
-
-const PRELOADER_MS = 1.45; // must match Preloader's timeout (1400ms)
 
 /**
  * GSAP owns the HERO animation system (Framer removed from hero):
@@ -18,9 +17,10 @@ const PRELOADER_MS = 1.45; // must match Preloader's timeout (1400ms)
 export default function GsapEffects() {
   useEffect(() => {
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    let tl!: gsap.core.Timeline;
     const ctx = gsap.context(() => {
-      /* --- 1. hero master timeline (starts as preloader lifts) --- */
-      const tl = gsap.timeline({ defaults: { ease: "power4.out" }, delay: PRELOADER_MS });
+      /* --- 1. hero master timeline (plays the moment the preloader lifts) --- */
+      tl = gsap.timeline({ paused: true, defaults: { ease: "power4.out" } });
 
       tl.from("[data-gs-badge]", {
         scale: 0,
@@ -99,7 +99,16 @@ export default function GsapEffects() {
         });
       });
     });
-    return () => ctx.revert();
+    // Start the hero choreography exactly when the splash lifts —
+    // no guessing with fixed delays, no blank-hero gap on repeat views.
+    let cancelled = false;
+    void preloaderFinished.then(() => {
+      if (!cancelled) tl.play();
+    });
+    return () => {
+      cancelled = true;
+      ctx.revert();
+    };
   }, []);
 
   return null;
