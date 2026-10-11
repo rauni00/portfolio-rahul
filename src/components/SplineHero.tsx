@@ -52,7 +52,6 @@ export default function SplineHero({ height = 620, fill = false }: { height?: nu
   const [sceneUrl, setSceneUrl] = useState<string>();
   const heads = useRef<Tracked[]>([]);
   const dancer = useRef<Tracked | null>(null);
-  const appRef = useRef<any>(null);
   const target = useRef({ x: 0, y: 0 });
   const dancing = useRef(false);
   const danceBlend = useRef(0);
@@ -84,26 +83,16 @@ export default function SplineHero({ height = 620, fill = false }: { height?: nu
     };
   }, []);
 
-  /* Render-loop pause: when the hero scrolls out of view, stop Spline's
-     WebGL loop (battery/CPU saver on phones) and skip our own tick work.
-     Everything resumes the moment the hero returns. */
+  /* Off-screen heartbeat: when the hero scrolls out of view we only skip
+     our own joint math (cheap). Spline's own loop is intentionally left
+     running — stopping it replays the scene intro on return, which looks
+     like a reload. */
   useEffect(() => {
     const hero = document.getElementById("home");
     if (!hero) return;
     const io = new IntersectionObserver(
       ([entry]) => {
-        const vis = entry.isIntersecting;
-        stageVisible.current = vis;
-        const app = appRef.current;
-        try {
-          if (vis) {
-            if (typeof app?.play === "function") app.play();
-          } else if (typeof app?.stop === "function") {
-            app.stop();
-          }
-        } catch {
-          /* runtime control unavailable */
-        }
+        stageVisible.current = entry.isIntersecting;
       },
       { threshold: 0 }
     );
@@ -202,7 +191,6 @@ export default function SplineHero({ height = 620, fill = false }: { height?: nu
      for the groove. Individual limbs are never touched (pivot mismatch made
      parts fly off the body). */
   const handleLoad = (app: any) => {
-    appRef.current = app;
     try {
       const all: any[] = typeof app?.getAllObjects === "function" ? app.getAllObjects() : [];
       const nameOf = (o: any) => String(o?.name ?? "");
