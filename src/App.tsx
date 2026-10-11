@@ -162,6 +162,11 @@ function useShouldLoad3D() {
   const [ok, setOk] = useState(false);
   useEffect(() => {
     const mqMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const mqFine = window.matchMedia("(pointer: fine)");
+    const mqWide = window.matchMedia("(min-width: 640px)");
+    const conn = (navigator as Navigator & { connection?: { saveData?: boolean } }).connection;
+    // Data-saver users asked for less data — keep the robot off for them
+    if (conn?.saveData) return;
     const compute = () => setOk(!mqMotion.matches);
     // Defer past first paint: idle callback with timeout fallback
     const w = window as unknown as {
@@ -170,9 +175,9 @@ function useShouldLoad3D() {
     };
     const schedule = (fn: () => void): number => {
       if (typeof w.requestIdleCallback === "function") {
-        return w.requestIdleCallback(fn, { timeout: 2500 });
+        return w.requestIdleCallback(fn, { timeout: 3000 });
       }
-      return window.setTimeout(fn, 1200);
+      return window.setTimeout(fn, 2000);
     };
     const cancel = (id: number) => {
       if (typeof w.cancelIdleCallback === "function") {
@@ -181,10 +186,21 @@ function useShouldLoad3D() {
         clearTimeout(id);
       }
     };
-    const id = schedule(compute);
+    let id = 0;
+    let onLoad: (() => void) | null = null;
+    if ((!mqFine.matches || !mqWide.matches) && document.readyState !== "complete") {
+      // On phones, never let Spline fight first paint — wait for full load
+      onLoad = () => {
+        id = schedule(compute);
+      };
+      window.addEventListener("load", onLoad, { once: true });
+    } else {
+      id = schedule(compute);
+    }
     mqMotion.addEventListener?.("change", compute);
     return () => {
       cancel(id);
+      if (onLoad) window.removeEventListener("load", onLoad);
       mqMotion.removeEventListener?.("change", compute);
     };
   }, []);

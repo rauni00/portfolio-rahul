@@ -1,4 +1,5 @@
 const CACHE_NAME = "rahul-portfolio-spline-scene-v1";
+const IMMUTABLE_CACHE = "rahul-portfolio-immutable-v1";
 const LOCAL_SCENE_PATH = "/cached-spline/scene.splinecode";
 const LOCAL_SCENE_URL = new URL(LOCAL_SCENE_PATH, self.location.origin).href;
 const REMOTE_SCENE_URL = "https://prod.spline.design/kZDDjO5HuC9GJUM2/scene.splinecode";
@@ -14,7 +15,11 @@ self.addEventListener("activate", (event) => {
       caches.keys().then((keys) =>
         Promise.all(
           keys
-            .filter((key) => key.startsWith("rahul-portfolio-spline-scene-") && key !== CACHE_NAME)
+            .filter(
+              (key) =>
+                (key.startsWith("rahul-portfolio-spline-scene-") && key !== CACHE_NAME) ||
+                (key.startsWith("rahul-portfolio-immutable-") && key !== IMMUTABLE_CACHE),
+            )
             .map((key) => caches.delete(key)),
         ),
       ),
@@ -24,7 +29,31 @@ self.addEventListener("activate", (event) => {
 
 self.addEventListener("fetch", (event) => {
   const requestUrl = new URL(event.request.url);
-  if (event.request.method !== "GET" || requestUrl.pathname !== LOCAL_SCENE_PATH) return;
+  if (event.request.method !== "GET") return;
+
+  // Hashed build assets (Spline runtime JS/WASM) are content-addressed and
+  // immutable — cache-first forever so repeat visits never re-download MBs.
+  // index.html is intentionally excluded (must stay fresh per deploy).
+  if (requestUrl.origin === self.location.origin && requestUrl.pathname.startsWith("/assets/")) {
+    event.respondWith(
+      caches.open(IMMUTABLE_CACHE).then(async (cache) => {
+        const cached = await cache.match(event.request);
+        if (cached) return cached;
+        const response = await fetch(event.request);
+        if (response.ok) {
+          try {
+            await cache.put(event.request, response.clone());
+          } catch (error) {
+            console.warn("[spline-cache] could not persist asset", error);
+          }
+        }
+        return response;
+      }),
+    );
+    return;
+  }
+
+  if (requestUrl.pathname !== LOCAL_SCENE_PATH) return;
 
   event.respondWith(
     caches.open(CACHE_NAME).then(async (cache) => {

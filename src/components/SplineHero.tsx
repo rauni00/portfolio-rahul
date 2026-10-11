@@ -52,9 +52,11 @@ export default function SplineHero({ height = 620, fill = false }: { height?: nu
   const [sceneUrl, setSceneUrl] = useState<string>();
   const heads = useRef<Tracked[]>([]);
   const dancer = useRef<Tracked | null>(null);
+  const appRef = useRef<any>(null);
   const target = useRef({ x: 0, y: 0 });
   const dancing = useRef(false);
   const danceBlend = useRef(0);
+  const stageVisible = useRef(true);
 
   useEffect(() => {
     let active = true;
@@ -80,6 +82,33 @@ export default function SplineHero({ height = 620, fill = false }: { height?: nu
     return () => {
       active = false;
     };
+  }, []);
+
+  /* Render-loop pause: when the hero scrolls out of view, stop Spline's
+     WebGL loop (battery/CPU saver on phones) and skip our own tick work.
+     Everything resumes the moment the hero returns. */
+  useEffect(() => {
+    const hero = document.getElementById("home");
+    if (!hero) return;
+    const io = new IntersectionObserver(
+      ([entry]) => {
+        const vis = entry.isIntersecting;
+        stageVisible.current = vis;
+        const app = appRef.current;
+        try {
+          if (vis) {
+            if (typeof app?.play === "function") app.play();
+          } else if (typeof app?.stop === "function") {
+            app.stop();
+          }
+        } catch {
+          /* runtime control unavailable */
+        }
+      },
+      { threshold: 0 }
+    );
+    io.observe(hero);
+    return () => io.disconnect();
   }, []);
 
   /* Party sections: the robot grooves while Projects / Contact are on screen */
@@ -123,6 +152,11 @@ export default function SplineHero({ height = 620, fill = false }: { height?: nu
     const look = { x: 0, y: 0 };
     let raf = 0;
     const tick = () => {
+      // Stage off-screen: skip all joint work, just keep the heartbeat
+      if (!stageVisible.current) {
+        raf = requestAnimationFrame(tick);
+        return;
+      }
       look.x += (target.current.x - look.x) * 0.08;
       look.y += (target.current.y - look.y) * 0.08;
       // Ease the dance in/out so the robot never snaps between poses
@@ -168,6 +202,7 @@ export default function SplineHero({ height = 620, fill = false }: { height?: nu
      for the groove. Individual limbs are never touched (pivot mismatch made
      parts fly off the body). */
   const handleLoad = (app: any) => {
+    appRef.current = app;
     try {
       const all: any[] = typeof app?.getAllObjects === "function" ? app.getAllObjects() : [];
       const nameOf = (o: any) => String(o?.name ?? "");
